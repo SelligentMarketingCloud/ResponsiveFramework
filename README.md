@@ -4,6 +4,10 @@ The responsive framework is a collection of guidelines developed by Marigold Sel
 The guidelines come in the form of an example HTML template with multiple column layouts.
 
 # Validation
+A pipeline is planned to validate the template against actual mail client renderings.
+
+# Contributions
+If you have the right level of access, you are free to create PullRequests against this repository.
 
 # Versions
 | Link                          | Description                 |
