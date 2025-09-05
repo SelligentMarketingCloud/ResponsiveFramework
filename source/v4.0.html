@@ -1,0 +1,609 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html xmlns:o="urn:schemas-microsoft-com:office:office">
+<head>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width">
+	<meta http-equiv="X-UA-Compatible" content="IE=edge">
+	<title>~MESSAGE.SUBJECT~</title>
+	<!--[if (gte mso 9)|(IE)]><xml><o:OfficeDocumentSettings><o:AllowPNG/><o:PixelsPerInch>96</o:PixelsPerInch></o:OfficeDocumentSettings></xml><![endif]-->
+	<style type="text/css">
+		/*
+		 * Responsive framework V 4.0
+		 * --------------------------
+		 * @Author: Bram Sué and Jonas Vanmechelen
+		 * @Twitter: @BramSue & @J_Vanmechelen
+		 * @Company: Selligent
+		 * @Website: http://www.selligent.com
+		 * @Version: 4.0
+		 * @Litmus: 
+	     */
+	    
+	    /*
+			:: KNOWN ISSUES
+
+			- Does not work on Lotus notes (release date: August 2005)	    
+	     
+	    	:: NOTES
+
+	    	- New table structure, no conditional tags for outlook and IE
+	    	- Fab four technique for gmail
+	    	- added rel="noopener noreferrer" to the anchor tags for security reasons: https://dev.to/ben/the-targetblank-vulnerability-by-example;
+	    	- added anchor tags around the images, because of an issue with gmail. If the image has an anchor url change the cursor to pointer instead of default.
+	    	- added max-height: 999999px; to TD's with text. Solved issue for android devices with OS 5.0 (Lollipop).
+	    	- added margin for mobile.
+	    	- added background image support for a column
+	    	- added support for ltr and rtl in most of the clients (added [owa] .columns)
+	    	- added word-wrap: break-word; word-break: break-word;
+	    	- Same color of a-tag after click: https://litmus.com/community/discussions/4164-outlook-07-13-visited-link-color-fix
+	    	- removed [owa] columns
+			- issue OWA inline-block: each inline block element is seperated by some extra space. Solution add font-size:0 to the TD above the inline blocks; It's now also possible to valign in OWA.
+			- removed spacer images and replaced by &nbsp; and added font-size:0;
+			- added yahoo fix: overflow added on max-height elements;
+			- added text-decoration: none to anchor, to remove underline in recent versions of outlook
+			- don't give your td and anchor the same color because then the color is not respected in outlook mobile app
+			- Added id="OWATemporaryImageDivContainer1" to images to solve outlook.com bug
+			- Added extra style tag, only for Outlook and Lotus Notes. Issues with removing images in 2/3/4 columns ...
+	     */
+
+		* { -ms-text-size-adjust: 100%; -webkit-text-size-adjust: 100%; }
+		html, body { padding: 0 !important; height: 100% !important; width: 100% !important; margin: 0 !important;}
+		div[style*="margin: 16px 0"] { margin:0 !important; }
+		table, td { mso-table-lspace: 0pt !important; mso-table-rspace: 0pt !important; }
+		table { border-spacing: 0 !important; margin: 0 auto !important; }
+		a { text-decoration:none; }
+		.yshortcuts a { border-bottom: none !important; }
+		a[x-apple-data-detectors] { color:inherit !important; text-decoration: underline !important; }
+		.applelinks a {	color:#222222; text-decoration: none; }
+		th{ padding:0 !important; margin:0px !important; }
+		span.MsoHyperlink {mso-style-priority:99; color:inherit;}
+		span.MsoHyperlinkFollowed {mso-style-priority:99; color:inherit;}
+		@media screen yahoo{ *{ overflow: visible!important; } .y-overflow-hidden{ overflow: hidden!important; } }
+
+		.columns { display: inline-block; text-align: center; }
+		#preheader { display:none; }
+		#bg_img {
+	    	background-image:url(https://i.imgur.com/YJOX1PC.png);
+	 	}
+
+		@media screen and (max-width: 600px) {
+			.quarter { width: 25% !important; max-width: 25% !important;}
+			.third { width: 33.333% !important; max-width: 33.333% !important;}
+			.second { width: 50% !important; max-width: 50% !important;}
+			.full { width: 100% !important; max-width: 100% !important;}
+			.m_hide { display: none !important; }
+			.m_show { display: block !important; }
+			.m_wrapper { padding: 0 15px !important;}
+		}
+		@media screen and (max-width: 480px) {
+			.btn_table {width: 100% !important; display: table !important;}
+			.btn_td {padding:0 !important; display:block !important; font-size:14px !important; font-weight:bold !important; padding:6px 4px 8px 4px !important; line-height:18px !important;  border-radius:5px !important; margin:10px auto; width:70% !important; text-align:center; text-decoration:none; text-shadow:#EEEEEE 1px 0 0; }
+			.quarter { width: 50% !important; max-width: 50% !important;}
+			.second, .third { width: 100% !important; max-width: 100% !important;}
+		}
+	</style>
+	<!--[if (gte mso 9)|(IE)]>
+		<style type="text/css">
+			.block_285 {
+				width: 285px !important;
+			}
+			.block_190 {
+				width: 190px !important;
+			}
+			.block_142 {
+				width: 142px !important;
+			}
+		</style>
+	<![endif]-->
+</head>
+<body width="100%" bgcolor="#D0D5D6" style="margin: 0; padding: 0;">
+		<!-- :: Start Preheader Visualization-->
+		<!-- :: Remove m_show in case you don't want the preheader to be shown on mobile -->
+		<!--[if (gte mso 9)|(IE)]><!-- -->
+		<table id="preheader" class="m_show" style="display:none;" cellpadding="0" cellspacing="0" border="0" width="100%" role="presentation" bgcolor="#D0D5D6">
+			<tr><td align="center">Lorem Ipsum...</td></tr>
+		</table>
+		<!--<![endif]-->
+		<!-- :: End Preheader Visualization -->
+		<!-- :: Start Hero image -->
+		<table cellpadding="0" cellspacing="0" border="0" width="100%" role="presentation" bgcolor="#D0D5D6">
+			<tr>
+				<td class="m_hide" style="font-size:0;line-height:1px;height:1px;" height="1">&nbsp;</td>
+				<td class="m_wrapper" style="width:600px;">
+					<a href="https://www.selligent.com/" target="_blank" rel="noopener noreferrer" style="text-decoration:none;cursor:default;">
+						<img id="OWATemporaryImageDivContainer1" class="full" src="http://placehold.it/600x200" alt="alt" border="0" width="600" style="width:600px; max-width:100%; display:block;" />
+					</a>
+				</td>
+				<td class="m_hide" style="font-size:0;line-height:1px;height:1px;" height="1">&nbsp;</td>
+			</tr>
+		</table>
+		<!-- :: End Hero image -->
+		<!-- :: Start One column layout -->
+		<table cellpadding="0" cellspacing="0" border="0" width="100%" role="presentation" bgcolor="#D0D5D6">
+			<tr>
+				<td class="m_hide" style="font-size:0;line-height:1px;height:1px;" height="1">&nbsp;</td>
+				<td class="m_wrapper" style="width:600px;">
+					<table bgcolor="#FFFFFF" cellpadding="0" cellspacing="0" border="0" width="100%" role="presentation">
+						<tr>
+							<td style="padding: 25px;">
+								<table cellpadding="0" cellspacing="0" border="0" width="100%" role="presentation">
+									<tr>
+										<td style="text-align:left; font-family:arial; font-size:15px; mso-height-rule:exactly; line-height:20px; color:#555555;max-height: 999999px; word-wrap: break-word; word-break: break-word;">
+											Lorem ipsum...
+										</td>
+									</tr>
+								</table>
+							</td>
+						</tr>
+					</table>
+				</td>
+				<td class="m_hide" style="font-size:0;line-height:1px;height:1px;" height="1">&nbsp;</td>
+			</tr>
+		</table>
+		<!-- :: End one column layout -->
+		<!-- :: Start Image on the left hand side -->
+		<table cellpadding="0" cellspacing="0" border="0" width="100%" role="presentation" bgcolor="#D0D5D6">
+			<tr>
+				<td class="m_hide" style="font-size:0;line-height:1px;height:1px;" height="1">&nbsp;</td>
+				<td class="m_wrapper" style="width:600px;">
+					<table bgcolor="#FFFFFF" cellpadding="0" cellspacing="0" border="0" width="100%" role="presentation">
+						<tr>
+							<td dir="ltr" style="font-size:0;padding:15px;">
+								<table cellpadding="0" cellspacing="0" border="0" width="100%" style="text-align:center;" role="presentation">
+									<tr>
+										<th class="block_285 columns full" dir="ltr" valign="top" style="text-align:center; min-width:285px; width:50%; max-width:100%; min-width:-webkit-calc(50%); min-width:calc(50%); display:inline-block; width:-webkit-calc(230400px - 48000%); width:calc(230400px - 48000%);">
+											<table cellpadding="0" cellspacing="0" border="0" width="100%" role="presentation">
+												<tr>
+													<td style="padding:10px;">
+														<table cellpadding="0" cellspacing="0" border="0" width="100%" role="presentation">
+															<tr>
+																<td align="center">
+																	<a href="https://www.selligent.com/" target="_blank" rel="noopener noreferrer" style="text-decoration:none;cursor:default;">
+																		<img id="OWATemporaryImageDivContainer1" class="full" src="http://placehold.it/200" alt="alt" border="0" width="265" style="width:265px; max-width:100%; display:block;" />
+																	</a>
+																</td>
+															</tr>
+														</table>
+													</td>
+												</tr>
+											</table>
+										</th>
+										<th class="block_285 columns full" dir="ltr" valign="top" style="text-align:center;min-width:285px;width:50%;max-width:100%; min-width:-webkit-calc(50%); min-width:calc(50%); display:inline-block; width:-webkit-calc(230400px - 48000%); width:calc(230400px - 48000%);">
+											<table cellpadding="0" cellspacing="0" border="0" width="100%" role="presentation">
+												<tr>
+													<td style="padding:10px;">
+														<table cellpadding="0" cellspacing="0" border="0" width="100%" role="presentation">
+															<tr>
+																<td style="font-family:arial; font-weight:normal; font-size:15px; mso-height-rule:exactly; line-height:20px; color:#555555;; text-align:left;max-height: 999999px; word-wrap: break-word; word-break: break-word;">
+																	Lorem Ipsum...
+																</td>
+															</tr>
+														</table>
+													</td>
+												</tr>
+											</table>
+										</th>
+									</tr>
+								</table>
+							</td>
+						</tr>
+					</table>
+				</td>
+				<td class="m_hide" style="font-size:0;line-height:1px;height:1px;" height="1">&nbsp;</td>
+			</tr>
+		</table>
+		<!-- :: End Image on the left hand side  -->
+		<!-- :: Start Image on the left hand side -->
+		<table cellpadding="0" cellspacing="0" border="0" width="100%" role="presentation" bgcolor="#D0D5D6">
+			<tr>
+				<td class="m_hide" style="font-size:0;line-height:1px;height:1px;" height="1">&nbsp;</td>
+				<td class="m_wrapper" style="width:600px;">
+					<table bgcolor="#FFFFFF" cellpadding="0" cellspacing="0" border="0" width="100%" role="presentation">
+						<tr>
+							<td style="font-size:0;padding:15px;">
+								<table bgcolor="#FFFFFF" cellpadding="0" cellspacing="0" border="0" width="100%" role="presentation">
+									<tr>
+										<td dir="rtl">
+											<table cellpadding="0" cellspacing="0" border="0" width="100%" style="text-align:center;" role="presentation">
+												<tr>
+													<th class="block_285 columns full" dir="ltr" valign="top" style="text-align:center; min-width:285px; width:50%; max-width:100%; min-width:-webkit-calc(50%); min-width:calc(50%); display:inline-block; width:-webkit-calc(230400px - 48000%); width:calc(230400px - 48000%);">
+														<table cellpadding="0" cellspacing="0" border="0" width="100%" role="presentation">
+															<tr>
+																<td style="padding:10px;">
+																	<table cellpadding="0" cellspacing="0" border="0" width="100%" role="presentation">
+																		<tr>
+																			<td align="center">
+																				<a href="https://www.selligent.com/" target="_blank" rel="noopener noreferrer" style="text-decoration:none;cursor:default;">
+																					<img id="OWATemporaryImageDivContainer1" class="full" src="http://placehold.it/200" alt="alt" border="0" width="265" style="width:265px; max-width:100%; display:block;" />
+																				</a>
+																			</td>
+																		</tr>
+																	</table>
+																</td>
+															</tr>
+														</table>
+													</th>
+													<th class="block_285 columns full" dir="ltr" valign="top" style="text-align:center;min-width:285px;width:50%;max-width:100%; min-width:-webkit-calc(50%); min-width:calc(50%); display:inline-block; width:-webkit-calc(230400px - 48000%); width:calc(230400px - 48000%);">
+														<table cellpadding="0" cellspacing="0" border="0" width="100%" role="presentation">
+															<tr>
+																<td style="padding:10px;">
+																	<table cellpadding="0" cellspacing="0" border="0" width="100%" role="presentation">
+																		<tr>
+																			<td style="font-family:arial; font-weight:normal; font-size:15px; mso-height-rule:exactly; line-height:20px; color:#555555;; text-align:left;max-height: 999999px; word-wrap: break-word; word-break: break-word;">
+																				Lorem Ipsum...
+																			</td>
+																		</tr>
+																	</table>
+																</td>
+															</tr>
+														</table>
+													</th>
+												</tr>
+											</table>
+										</td>
+									</tr>
+								</table>
+							</td>
+						</tr>
+					</table>
+				</td>
+				<td class="m_hide" style="font-size:0;line-height:1px;height:1px;" height="1">&nbsp;</td>
+			</tr>
+		</table>
+		<!-- :: End Image on the left hand side  -->
+		<!-- :: Start Two column layout -->
+		<table cellpadding="0" cellspacing="0" border="0" width="100%" role="presentation" bgcolor="#D0D5D6">
+			<tr>
+				<td class="m_hide" style="font-size:0;line-height:1px;height:1px;" height="1">&nbsp;</td>
+				<td class="m_wrapper" style="width:600px;" align="center">
+					<table bgcolor="#FFFFFF" cellpadding="0" cellspacing="0" border="0" width="100%" role="presentation">
+						<tr>
+							<td style="font-size:0;padding:15px;">
+								<table cellpadding="0" cellspacing="0" border="0" width="100%" style="text-align:center;" role="presentation">
+									<tr>
+										<th class="block_285 columns full" style="text-align:center; min-width:285px; width:50%; max-width:100%; min-width:-webkit-calc(50%); min-width:calc(50%); display:inline-block; width:-webkit-calc(230400px - 48000%); width:calc(230400px - 48000%);" valign="top">
+											<!-- :: Start Article (1) -->
+											<table cellpadding="0" cellspacing="0" border="0" width="100%" role="presentation">
+												<tr>
+													<td style="padding:10px;">
+														<table cellpadding="0" cellspacing="0" border="0" width="100%" role="presentation">
+															<tr>
+																<td>
+																	<table cellpadding="0" cellspacing="0" border="0" width="100%" role="presentation">
+																		<tr>
+																			<td align="center">
+																				<a href="https://www.selligent.com/" target="_blank" rel="noopener noreferrer" style="text-decoration:none;cursor:default;">
+																					<img id="OWATemporaryImageDivContainer1" class="full" src="http://placehold.it/200" alt="alt" border="0" width="265" style="width:265px; max-width:100%; display:block;" />
+																				</a>
+																			</td>
+																		</tr>
+																	</table>
+																	<table cellpadding="0" cellspacing="0" border="0" width="100%" role="presentation">
+																		<tr>
+																			<td style="font-family:arial; font-weight:normal; font-size:15px; mso-height-rule:exactly; line-height:20px; color:#265; padding-top:10px;max-height: 999999px; word-wrap: break-word; word-break: break-word;">
+																				Lorem Ipsum...
+																			</td>
+																		</tr>
+																	</table>
+																</td>
+															</tr>
+														</table>
+													</td>
+												</tr>
+											</table>
+											<!-- :: End Article (1) -->
+										</th>
+										<th class="block_285 columns full" style="text-align:center; min-width:285px; width:50%; max-width:100%; min-width:-webkit-calc(50%); min-width:calc(50%); display:inline-block; width:-webkit-calc(230400px - 48000%); width:calc(230400px - 48000%);" valign="top">
+											<!-- :: Start Article (2) -->
+											<table cellpadding="0" cellspacing="0" border="0" width="100%" role="presentation">
+												<tr>
+													<td style="padding:10px;">
+														<table cellpadding="0" cellspacing="0" border="0" width="100%" role="presentation">
+															<tr>
+																<td>
+																	<table cellpadding="0" cellspacing="0" border="0" width="100%" role="presentation">
+																		<tr>
+																			<td align="center">
+																				<a href="https://www.selligent.com/" target="_blank" rel="noopener noreferrer" style="text-decoration:none;cursor:default;">
+																					<img id="OWATemporaryImageDivContainer1" class="full" src="http://placehold.it/200" alt="alt" border="0" width="265" style="width:265px; max-width:100%; display:block;" />
+																				</a>
+																			</td>
+																		</tr>
+																	</table>
+																	<table cellpadding="0" cellspacing="0" border="0" width="100%" role="presentation">
+																		<tr>
+																			<td style="font-family:arial; font-weight:normal; font-size:15px; mso-height-rule:exactly; line-height:20px; color:#555555; padding-top:10px;max-height: 999999px; word-wrap: break-word; word-break: break-word;">
+																				Lorem Ipsum...
+																			</td>
+																		</tr>
+																	</table>
+																</td>
+															</tr>
+														</table>
+													</td>
+												</tr>
+											</table>
+											<!-- :: End Article (2) -->
+										</th>
+									</tr>
+								</table>
+							</td>
+						</tr>
+					</table>
+				</td>
+				<td class="m_hide" style="font-size:0;line-height:1px;height:1px;" height="1">&nbsp;</td>
+			</tr>
+		</table>
+		<!-- :: End Two column layout -->
+		<!-- :: Start Three column layout -->
+		<table cellpadding="0" cellspacing="0" border="0" width="100%" role="presentation" bgcolor="#D0D5D6">
+			<tr>
+				<td class="m_hide" style="font-size:0;line-height:1px;height:1px;" height="1">&nbsp;</td>
+				<td class="m_wrapper" style="width:600px;">
+					<table bgcolor="#FFFFFF" cellpadding="0" cellspacing="0" border="0" width="100%" role="presentation">
+						<tr>
+							<td style="font-size:0;padding:15px;">
+								<table cellpadding="0" cellspacing="0" border="0" width="100%" style="text-align:center;" role="presentation">
+									<tr>
+										<th class="block_190 columns full" style="text-align:center; min-width:190px; width:33.333%; max-width:100%; min-width:-webkit-calc(33.333%); min-width:calc(33.333%); display:inline-block; width:-webkit-calc(230400px - 48000%); width:calc(230400px - 48000%);" valign="top">
+											<!-- :: Start Article (1) -->
+											<table cellpadding="0" cellspacing="0" border="0" width="100%" role="presentation">
+												<tr>
+													<td style="padding:10px;">
+														<table cellpadding="0" cellspacing="0" border="0" width="100%" role="presentation">
+															<tr>
+																<td align="center">
+																	<a href="https://www.selligent.com/" target="_blank" rel="noopener noreferrer" style="text-decoration:none;cursor:default;">
+																		<img id="OWATemporaryImageDivContainer1" class="full" src="http://placehold.it/200" alt="alt" border="0" width="170" style="width:170px; max-width:100%; display:block;" />
+																	</a>
+																</td>
+															</tr>
+														</table>
+														<table cellpadding="0" cellspacing="0" border="0" width="100%" role="presentation">
+															<tr>
+																<td style="font-family:arial; font-weight:normal; font-size:15px; mso-height-rule:exactly; line-height:20px; color:#555555; padding-top:10px;max-height: 999999px; word-wrap: break-word; word-break: break-word;">
+																	Lorem Ipsum...
+																</td>
+															</tr>
+														</table>
+													</td>
+												</tr>
+											</table>
+											<!-- :: End Article (1) -->
+										</th>
+										<th class="block_190 columns full" style="text-align:center; min-width:190px; width:33.333%; max-width:100%; min-width:-webkit-calc(33.333%); min-width:calc(33.333%); display:inline-block; width:-webkit-calc(230400px - 48000%); width:calc(230400px - 48000%);" valign="top">
+											<!-- :: Start Article (2) -->
+											<table cellpadding="0" cellspacing="0" border="0" width="100%" role="presentation">
+												<tr>
+													<td style="padding:10px;">
+														<table cellpadding="0" cellspacing="0" border="0" width="100%" role="presentation">
+															<tr>
+																<td align="center">
+																	<a href="https://www.selligent.com/" target="_blank" rel="noopener noreferrer" style="text-decoration:none;cursor:default;">
+																		<img id="OWATemporaryImageDivContainer1" class="full" src="http://placehold.it/200" alt="alt" border="0" width="170" style="width:170px; max-width:100%; display:block;" />
+																	</a>
+																</td>
+															</tr>
+														</table>
+														<table cellpadding="0" cellspacing="0" border="0" width="100%" role="presentation">
+															<tr>
+																<td style="font-family:arial; font-weight:normal; font-size:15px; mso-height-rule:exactly; line-height:20px; color:#555555; padding-top:10px;max-height: 999999px; word-wrap: break-word; word-break: break-word;">
+																	Lorem Ipsum...
+																</td>
+															</tr>
+														</table>
+													</td>
+												</tr>
+											</table>
+											<!-- :: End Article (2) -->
+										</th>
+										<th class="block_190 columns full" style="text-align:center; min-width:190px; width:33.333%; max-width:100%; min-width:-webkit-calc(33.333%); min-width:calc(33.333%); display:inline-block; width:-webkit-calc(230400px - 48000%); width:calc(230400px - 48000%);" valign="top">
+											<!-- :: Start Article (3) -->
+											<table cellpadding="0" cellspacing="0" border="0" width="100%" role="presentation">
+												<tr>
+													<td style="padding:10px;">
+														<table cellpadding="0" cellspacing="0" border="0" width="100%" role="presentation">
+															<tr>
+																<td align="center">
+																	<a href="https://www.selligent.com/" target="_blank" rel="noopener noreferrer" style="text-decoration:none;cursor:default;">
+																		<img id="OWATemporaryImageDivContainer1" class="full" src="http://placehold.it/200" alt="alt" border="0" width="170" style="width:170px; max-width:100%; display:block;" />
+																	</a>
+																</td>
+															</tr>
+														</table>
+														<table cellpadding="0" cellspacing="0" border="0" width="100%" role="presentation">
+															<tr>
+																<td style="font-family:arial; font-weight:normal; font-size:15px; mso-height-rule:exactly; line-height:20px; color:#555555; padding-top:10px;max-height: 999999px; word-wrap: break-word; word-break: break-word;">
+																	Lorem Ipsum...
+																</td>
+															</tr>
+														</table>
+													</td>
+												</tr>
+											</table>
+											<!-- :: End Article (3) -->
+										</th>
+									</tr>
+								</table>
+							</td>
+						</tr>
+					</table>
+				</td>
+				<td class="m_hide" style="font-size:0;line-height:1px;height:1px;" height="1">&nbsp;</td>
+			</tr>
+		</table>
+		<!-- :: End Three column layout -->
+		<!-- :: Start Four column layout -->
+		<table cellpadding="0" cellspacing="0" border="0" width="100%" role="presentation" bgcolor="#D0D5D6">
+			<tr>
+				<td class="m_hide" style="font-size:0;line-height:1px;height:1px;" height="1">&nbsp;</td>
+				<td class="m_wrapper" style="width:600px;">
+					<table bgcolor="#FFFFFF" cellpadding="0" cellspacing="0" border="0" width="100%" role="presentation">
+						<tr>
+							<td style="font-size:0;padding:15px;">
+								<table cellpadding="0" cellspacing="0" border="0" width="100%" style="text-align:center;" role="presentation">
+									<tr>
+										<th class="block_142 columns second" style="text-align:center; min-width:142px; width:25%; max-width:50%; min-width:-webkit-calc(25%); min-width:calc(25%); display:inline-block; width:-webkit-calc(230400px - 48000%); width:calc(230400px - 48000%);" valign="top">
+											<!-- :: Start Article (1) -->
+											<table cellpadding="0" cellspacing="0" border="0" width="100%" role="presentation">
+												<tr>
+													<td style="padding:10px;">
+														<table cellpadding="0" cellspacing="0" border="0" width="100%" role="presentation">
+															<tr>
+																<td align="center">
+																	<a href="https://www.selligent.com/" target="_blank" rel="noopener noreferrer" style="text-decoration:none;cursor:default;">
+																		<img id="OWATemporaryImageDivContainer1" class="full" src="http://placehold.it/200" alt="alt" border="0" width="122" style="width:122px; max-width:100%; display:block;" />
+																	</a>
+																</td>
+															</tr>
+														</table>
+														<table cellpadding="0" cellspacing="0" border="0" width="100%" role="presentation">
+															<tr>
+																<td style="font-family: arial; font-weight:normal; font-size:15px; mso-height-rule:exactly; line-height:20px; color:#555555; padding-top:10px;max-height: 999999px; word-wrap: break-word; word-break: break-word;">
+																	Lorem Ipsum...
+																</td>
+															</tr>
+														</table>
+													</td>
+												</tr>
+											</table>
+											<!-- :: End Article (1) -->
+										</th>
+										<th class="block_142 columns second" style="text-align:center; min-width:142px; width:25%; max-width:50%; min-width:-webkit-calc(25%); min-width:calc(25%); display:inline-block; width:-webkit-calc(230400px - 48000%); width:calc(230400px - 48000%);" valign="top">
+											<!-- :: Start Article (2) -->
+											<table cellpadding="0" cellspacing="0" border="0" width="100%" role="presentation">
+												<tr>
+													<td style="padding:10px;">
+														<table cellpadding="0" cellspacing="0" border="0" width="100%" role="presentation">
+															<tr>
+																<td align="center">
+																	<a href="https://www.selligent.com/" target="_blank" rel="noopener noreferrer" style="text-decoration:none;cursor:default;">
+																		<img id="OWATemporaryImageDivContainer1" class="full" src="http://placehold.it/200" alt="alt" border="0" width="122" style="width:122px; max-width:100%; display:block;" />
+																	</a>
+																</td>
+															</tr>
+														</table>
+														<table cellpadding="0" cellspacing="0" border="0" width="100%" role="presentation">
+															<tr>
+																<td style="font-family: arial; font-weight:normal; font-size:15px; mso-height-rule:exactly; line-height:20px; color:#555555; padding-top:10px;max-height: 999999px; word-wrap: break-word; word-break: break-word;">
+																	Lorem Ipsum...
+																</td>
+															</tr>
+														</table>
+													</td>
+												</tr>
+											</table>
+											<!-- :: End Article (2) -->
+										</th>
+										<th class="block_142 columns second" style="text-align:center; min-width:142px; width:25%; max-width:50%; min-width:-webkit-calc(25%); min-width:calc(25%); display:inline-block; width:-webkit-calc(230400px - 48000%); width:calc(230400px - 48000%);" valign="top">
+											<!-- :: Start Article (3) -->
+											<table cellpadding="0" cellspacing="0" border="0" width="100%" role="presentation">
+												<tr>
+													<td style="padding:10px;">
+														<table cellpadding="0" cellspacing="0" border="0" width="100%" role="presentation">
+															<tr>
+																<td align="center">
+																	<a href="https://www.selligent.com/" target="_blank" rel="noopener noreferrer" style="text-decoration:none;cursor:default;">
+																		<img id="OWATemporaryImageDivContainer1" class="full" src="http://placehold.it/200" alt="alt" border="0" width="122" style="width:122px; max-width:100%; display:block;" />
+																	</a>
+																</td>
+															</tr>
+														</table>
+														<table cellpadding="0" cellspacing="0" border="0" width="100%" role="presentation">
+															<tr>
+																<td style="font-family: arial; font-weight:normal; font-size:15px; mso-height-rule:exactly; line-height:20px; color:#555555; padding-top:10px;max-height: 999999px; word-wrap: break-word; word-break: break-word;">
+																	Lorem Ipsum...
+																</td>
+															</tr>
+														</table>	
+													</td>
+												</tr>
+											</table>
+											<!-- :: End Article (3) -->
+										</th>
+										<th class="block_142 columns second" style="text-align:center; min-width:142px; width:25%; max-width:50%; min-width:-webkit-calc(25%); min-width:calc(25%); display:inline-block; width:-webkit-calc(230400px - 48000%); width:calc(230400px - 48000%);" valign="top">
+											<!-- :: Start Article (4) -->
+											<table cellpadding="0" cellspacing="0" border="0" width="100%" role="presentation">
+												<tr>
+													<td style="padding:10px;">
+														<table cellpadding="0" cellspacing="0" border="0" width="100%" role="presentation">
+															<tr>
+																<td align="center">
+																	<a href="https://www.selligent.com/" target="_blank" rel="noopener noreferrer" style="text-decoration:none;cursor:default;">
+																		<img id="OWATemporaryImageDivContainer1" class="full" src="http://placehold.it/200" alt="alt" border="0" width="122" style="width:122px; max-width:100%; display:block;" />
+																	</a>
+																</td>
+															</tr>
+														</table>
+														<table cellpadding="0" cellspacing="0" border="0" width="100%" role="presentation">
+															<tr>
+																<td style="font-family: arial; font-weight:normal; font-size:15px; mso-height-rule:exactly; line-height:20px; color:#555555; padding-top:10px;max-height: 999999px; word-wrap: break-word; word-break: break-word;">
+																	Lorem Ipsum...
+																</td>
+															</tr>
+														</table>
+													</td>
+												</tr>
+											</table>
+											<!-- :: End Article (4) -->
+										</th>
+									</tr>
+								</table>
+							</td>
+						</tr>
+					</table>
+				</td>
+				<td class="m_hide" style="font-size:0;line-height:1px;height:1px;" height="1">&nbsp;</td>
+			</tr>
+		</table>
+		<!-- :: End Four column layout -->
+		<!-- :: Start Button layout -->
+		<!-- :: Change text-align left|center|right -->
+		<!-- :: Change display:inline-block to display:table and add width:100% for 100% width to actual content -->
+		<table cellpadding="0" cellspacing="0" border="0" width="100%" role="presentation" bgcolor="#D0D5D6">
+			<tr>
+				<td class="m_hide" style="font-size:0;line-height:1px;height:1px;" height="1">&nbsp;</td>
+				<td class="m_wrapper" style="width:600px;">
+					<table bgcolor="#FFFFFF" cellpadding="0" cellspacing="0" border="0" width="100%" role="presentation">
+						<tr>
+							<td style="padding: 25px;font-size:0;text-align:left">
+								<table class="btn_table" cellpadding="0" cellspacing="0" border="0" role="presentation" style="display:inline-block;">
+									<tr>
+										<td class="btn_td" bgcolor="#01B47A" style="padding:15px;text-align:center;font-family: arial; font-size: 15px; mso-height-rule: exactly; line-height: 20px;max-height: 999999px; ">
+											<a class="btn" href="https://www.selligent.com/" target="_blank" rel="noopener noreferrer" style="color:#FFFFFF;text-decoration:none;">
+												Lorem Ipsum...
+											</a>
+										</td>
+									</tr>
+								</table>
+								
+							</td>
+						</tr>
+					</table>
+				</td>
+				<td class="m_hide" style="font-size:0;line-height:1px;height:1px;" height="1">&nbsp;</td>
+			</tr>
+		</table>
+		<!-- :: End Button layout -->
+		<!-- :: Start Divider :: Remove bgColor on table if you want to use this code as a spacer OR change bgColor to the same as your background -->
+		<table cellpadding="0" cellspacing="0" border="0" width="100%" role="presentation" bgcolor="#D0D5D6">
+			<tr>
+				<td class="m_hide" style="font-size:0;line-height:1px;height:1px;" height="1">&nbsp;</td>
+				<td class="m_wrapper" style="width:600px;">
+					<table bgcolor="#FFFFFF" cellpadding="0" cellspacing="0" border="0" width="100%" role="presentation">
+						<tr>
+							<td style="">
+								<table border="0" cellspacing="0" cellpadding="0" width="100%">
+									<tr>
+										<td style="font-size:0;line-height:1px;height:1px;" height="1">&nbsp;</td>
+									</tr>
+								</table>
+							</td>
+						</tr>
+					</table>
+				</td>
+				<td class="m_hide" style="font-size:0;line-height:1px;height:1px;" height="1">&nbsp;</td>
+			</tr>
+		</table>
+		<!-- :: End Divider -->
+</body>
+</html>
