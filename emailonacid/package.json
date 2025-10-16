@@ -1,0 +1,8 @@
+{
+  "devDependencies": {
+    "@researchgate/emailonacid-snapshot": "^4.0.4"
+  },
+  "scripts": {
+    "screenshots": "node main.js"
+  }
+}
