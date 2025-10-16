@@ -16,8 +16,8 @@ jobs:
           node-version: '18'
       - run: npm install
         working-directory: ./emailonacid
-      - name: create screenshot output folder
-        run: mkdir output
+      - name: set screenshot baseline folder
+        run: cp output baseline
       - name: validate screenshots
         run: npm run screenshots
         working-directory: ./emailonacid
