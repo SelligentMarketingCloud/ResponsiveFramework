@@ -1,0 +1,140 @@
+*{
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body{
+    height: 100vh;
+    background-color: #ff5757;
+    font-family: 'Arial', sans-serif;
+}
+
+.container{
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.gallery{
+    display: flex;
+    flex-wrap: wrap;
+    max-height: 100%;
+    margin-top: 2rem;
+    align-items: center;
+    justify-content: center;
+}
+
+.image {
+    margin: 1rem;
+    cursor: pointer;
+    max-width: 18rem;
+    overflow: hidden;
+    max-height: 11rem;
+    border-radius: .5rem;
+}
+
+.image img{
+    max-width: 18rem;
+    transition: transform .3s ease-in-out;
+}
+
+.image:hover img{
+    transform: scale(1.1);
+}
+
+.lightBoxContainer{
+    top: 0;
+    left: 0;
+    opacity: 0;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    position: fixed;
+    align-items: center;
+    pointer-events: none;
+    justify-content: center;
+    backdrop-filter: blur(2px);
+    background: rgb(0 0 0 / 60%);
+    transition: opacity 0.3s ease-in-out;
+}
+
+.lightBoxContainer.show{
+    opacity: 1;
+    pointer-events: auto;
+}
+
+.lightBoxContainer .wrapper{
+    display: flex;
+    max-width: 40rem;
+    align-items: center;
+    flex-direction: column;
+    justify-content: center;
+}
+
+.lightBoxContainer .body{
+    display: flex;
+    margin-bottom: 1rem;
+    align-items: center;
+    flex-direction: column;
+    justify-content: center;
+}
+
+.lightBoxContainer .header{
+    width: 100%;
+    display: flex;
+    padding: 0 2rem;
+    margin-top: 1rem;
+    align-items: center;
+    margin-bottom: 1rem;
+    justify-content: space-between;
+}
+
+.lightBoxContainer .header .count{
+    color: #fff;
+}
+
+.lightBoxContainer .header .closeBtn{
+    border: 0;
+    color: #fff;
+    width: 2.6rem;
+    height: 2.6rem;
+    cursor: pointer;
+    font-size: 1.5rem;
+    border-radius: 50%;
+    background: transparent;
+    transition: background .3s ease-in-out;
+}
+
+.lightBoxContainer .header .closeBtn:hover{
+    background: rgb(255 255 255 / 20%);
+}
+
+.lightBoxContainer .body img{
+    max-width: 80%;
+    margin: 0 1rem;
+}
+
+.lightBoxContainer .body{
+    display: flex;
+    flex-direction: row;
+}
+
+.lightBoxContainer .body :is(.fa-angle-left, .fa-angle-right){
+    border: 0;
+    color: #fff;
+    width: 2.6rem;
+    display: grid;
+    height: 2.6rem;
+    cursor: pointer;
+    font-size: 1.8rem;
+    border-radius: 50%;
+    place-items: center;
+    background: transparent;
+    transition: background .3s ease-in-out;
+}
+
+.lightBoxContainer .body :is(.fa-angle-left, .fa-angle-right):hover{
+    background: rgb(255 255 255 / 20%);
+}
