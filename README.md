@@ -1,5 +1,5 @@
 # Introduction 
-The responsive framework is a collection of guidelines developed by Marigold Selligent to design responsive HTML emails.
+The responsive framework is a collection of guidelines developed by Marigold Selligent to [design responsive HTML emails](https://selligentmarketingcloud.github.io/ResponsiveFramework/).
 
 The guidelines come in the form of an example HTML template with multiple column layouts.
 
