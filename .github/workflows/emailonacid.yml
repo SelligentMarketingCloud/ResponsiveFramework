@@ -26,7 +26,26 @@ jobs:
           EOA_ACCOUNT_PASSWORD: ${{ secrets.EOA_ACCOUNT_PASSWORD }}
           EOA_API_KEY: ${{ vars.EOA_API_KEY }}
       - name: Publish screenshots
-        uses: actions/upload-artifact@v4
-        with:
-          name: screenshots
-          path: output
+        uses: actions/upload-pages-artifact@v1
+        with: 
+          path: output    # At a minimum this job should upload artifacts using actions/upload-pages-artifact
+
+  deploy:
+    needs: validate
+    runs-on: ubuntu-latest
+
+    # Grant GITHUB_TOKEN the permissions required to make a Pages deployment
+    permissions:
+      pages: write      # to deploy to Pages
+      id-token: write   # to verify the deployment originates from an appropriate source
+
+    # Deploy to the github-pages environment
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+
+    # Specify runner + deployment step
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v2
