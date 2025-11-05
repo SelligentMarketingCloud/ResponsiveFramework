@@ -1,8 +1,10 @@
 {
   "devDependencies": {
-    "@researchgate/emailonacid-snapshot": "^4.0.4"
+    "@researchgate/emailonacid-snapshot": "^4.0.4",
+    "odiff-bin": "^4.1.1"
   },
   "scripts": {
-    "screenshots": "node main.js"
+    "screenshots": "node main.js",
+    "diff": "node diff.js"
   }
 }
