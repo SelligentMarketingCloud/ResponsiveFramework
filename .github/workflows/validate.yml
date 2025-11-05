@@ -1,0 +1,36 @@
+name: Validate Responsive Framework
+
+on:
+  workflow_call:
+    secrets:
+      EOA_ACCOUNT_PASSWORD:
+        required: true
+    inputs:
+      EOA_API_KEY:
+        required: true
+        type: string
+
+jobs:
+  validate:
+    name: Capture and compare screenshots
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: '18'
+      - run: npm install
+        working-directory: ./emailonacid
+      - name: Screenshot baseline
+        run: cp -r output baseline
+      - name: Capture screenshots
+        run: npm run screenshots
+        working-directory: ./emailonacid
+        env:
+          EOA_ACCOUNT_PASSWORD: ${{ secrets.EOA_ACCOUNT_PASSWORD }}
+          EOA_API_KEY: ${{ inputs.EOA_API_KEY }}
+      - name: Publish screenshots
+        uses: actions/upload-pages-artifact@v4
+        with: 
+          path: output
