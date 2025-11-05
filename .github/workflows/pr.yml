@@ -16,6 +16,9 @@ jobs:
     name: Create screenshot diffs
     runs-on: ubuntu-latest
     steps:
+      - name: Install dependencies
+        run: npm ci
+        working-directory: ./emailonacid
       - name: Compare screenshots
         run: npm run diff
         working-directory: ./emailonacid
