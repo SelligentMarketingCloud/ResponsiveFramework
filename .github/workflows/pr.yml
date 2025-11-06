@@ -17,6 +17,8 @@ jobs:
     name: Create screenshot diffs
     runs-on: ubuntu-latest
     steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
       - name: Download screenshot artifacts
         uses: actions/download-artifact@v4
         with:
