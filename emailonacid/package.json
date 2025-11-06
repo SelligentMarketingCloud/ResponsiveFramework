@@ -4,7 +4,7 @@
     "odiff-bin": "^4.1.1"
   },
   "scripts": {
-    "screenshots": "node main.js",
+    "eoa": "node eoa.js",
     "diff": "node diff.js"
   }
 }

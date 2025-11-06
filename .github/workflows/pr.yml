@@ -5,7 +5,7 @@ on:
 
 jobs:
   validate:
-    uses: ./.github/workflows/validate.yml
+    uses: ./.github/workflows/eoa.yml
     secrets:
       EOA_ACCOUNT_PASSWORD: ${{ secrets.EOA_ACCOUNT_PASSWORD }}
     with:
