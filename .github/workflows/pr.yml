@@ -21,13 +21,13 @@ jobs:
         uses: actions/checkout@v4
 
       - name: List files in the repository (1)
-        run: ls ${{ github.workspace }}
+        run: find ${{ github.workspace }}
 
       - name: Screenshot baseline
         run: cp -r output baseline
 
       - name: List files in the repository (2)
-        run: ls ${{ github.workspace }}
+        run: find ${{ github.workspace }}
 
       - name: Download screenshot artifacts
         uses: actions/download-artifact@v4
@@ -36,7 +36,7 @@ jobs:
           path: output
 
       - name: List files in the repository (3)
-        run: ls ${{ github.workspace }}
+        run: find ${{ github.workspace }}
 
       - name: Install dependencies
         run: npm ci
@@ -47,7 +47,7 @@ jobs:
         working-directory: ./emailonacid
 
       - name: List files in the repository (4)
-        run: ls ${{ github.workspace }}
+        run: find ${{ github.workspace }}
 
       - name: Setup gh actions artifact client
         uses: lhotari/gh-actions-artifact-client@v2
