@@ -22,7 +22,7 @@ jobs:
         with:
           lfs: true
       - name: Screenshot baseline
-        run: mkdir -p diff/base && cp -r output diff/base
+        run: mkdir -p diff/base && cp -r output/*.png diff/base
       - name: Download screenshot artifacts
         uses: actions/download-artifact@v4
         with:
