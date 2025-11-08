@@ -22,7 +22,7 @@ jobs:
         with:
           lfs: true
       - name: Screenshot baseline
-        run: cp -R output diff/base
+        run: mkdir -p diff/base && cp -R output diff/base
       - name: Download screenshot artifacts
         uses: actions/download-artifact@v4
         with:
@@ -32,7 +32,7 @@ jobs:
         run: npm ci
         working-directory: ./emailonacid
       - name: Compare screenshots
-        run: npm run diff
+        run: mkdir -p ../diff/diff && npm run diff
         working-directory: ./emailonacid
       - name: Generate report screenshots
         run: npm run report-ci
