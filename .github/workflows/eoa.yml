@@ -82,7 +82,7 @@ jobs:
               issue_number: context.issue.number,
               owner: context.repo.owner,
               repo: context.repo.repo,
-              body: `## :warning: Your changes introduced visual differences.
+              body: `### :warning: Your changes introduced visual differences.
               1. First [login here](https://www.artifact.ci/artifact/view/${context.repo.owner}/${context.repo.repo}/run/${context.runId}.${context.runAttempt??1}/diff)
-              2. Then [view the changes here](https://www.artifact.ci/artifact/view/${context.repo.owner}/${context.repo.repo}/run/${context.runId}.${context.runAttempt??1}/diff/index.html)`
+              2. Then [view the differences here](https://www.artifact.ci/artifact/view/${context.repo.owner}/${context.repo.repo}/run/${context.runId}.${context.runAttempt??1}/diff/index.html)`
             })
