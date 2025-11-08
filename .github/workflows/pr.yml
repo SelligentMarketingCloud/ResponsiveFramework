@@ -21,43 +21,24 @@ jobs:
         uses: actions/checkout@v4
         with:
           lfs: true
-
-      - name: List files in the repository (1)
-        run: find ${{ github.workspace }}
-
       - name: Screenshot baseline
-        run: cp -r output baseline
-
-      - name: List files in the repository (2)
-        run: find ${{ github.workspace }}
-
+        run: cp -R output diff/base
       - name: Download screenshot artifacts
         uses: actions/download-artifact@v4
         with:
           name: screenshots
-          path: output
-
-      - name: List files in the repository (3)
-        run: find ${{ github.workspace }}
-
+          path: diff/compare
       - name: Install dependencies
         run: npm ci
         working-directory: ./emailonacid
-
       - name: Compare screenshots
         run: npm run diff
         working-directory: ./emailonacid
-
-      - name: List files in the repository (4)
-        run: find ${{ github.workspace }}
-
-      - name: Setup gh actions artifact client
-        uses: lhotari/gh-actions-artifact-client@v2
-
-      - name: Upload screenshot artifacts
-        run: |
-          find output/diff -type f -name "*.png" | while read -r file; do
-            name=$(basename "$file")
-            echo "Uploading $name, file: $file"
-            zip - "$file" | gh-actions-artifact-client.js upload "${name}" --retentionDays=7
-          done
+      - name: Generate report screenshots
+        run: npm run report-ci
+        working-directory: ./emailonacid
+      - name: Publish diff report as artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: diff
+          path: diff
