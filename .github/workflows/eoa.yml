@@ -40,9 +40,13 @@ jobs:
       - name: Copy screenshots for caching
         if: ${{ inputs.mode == 'cache' }}
         run: mkdir -p diff/compare && cp -r output/*.png diff/compare
+      - name: List files in the repository
+        run: find ${{ github.workspace }} -ls
       - name: Cache screenshots
         if: ${{ inputs.mode == 'cache' }}
         uses: actions/cache/save@v4
         with:
           path: diff/compare
           key: ${{ github.run_id }}-screenshots
+      - name: List files in the repository after caching
+        run: find ${{ github.workspace }} -ls
