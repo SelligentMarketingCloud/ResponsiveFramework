@@ -83,6 +83,6 @@ jobs:
               owner: context.repo.owner,
               repo: context.repo.repo,
               body: `:warning: Your changes introduced visual differences.
-              
-                [Check out what changed](https://www.artifact.ci/artifact/view/' + context.repo.owner + '/' + context.repo.repo + '/run/' + context.runId + '.' + context.runNumber + '/diff)`
+
+                [Check out what changed](https://www.artifact.ci/artifact/view/${context.repo.owner}/${context.repo.repo}/run/${context.runId}.${context.runNumber}/diff)`
             })
