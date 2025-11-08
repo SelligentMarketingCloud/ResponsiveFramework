@@ -58,7 +58,7 @@ jobs:
         if: steps.cache-diff-restore.outputs.cache-hit != 'true' && (success() || steps.create-screenshots.conclusion == 'failure')
         run: npm run report-ci
         working-directory: ./emailonacid
-      - name: Save Primes
+      - name: Save diff to cache
         if: steps.cache-diff-restore.outputs.cache-hit != 'true'
         id: cache-primes-save
         uses: actions/cache/save@v4
@@ -71,3 +71,16 @@ jobs:
         with:
           name: diff
           path: diff
+      - name: Fail if there are visual differences
+        run: exit $(jq -r .totalFailed diff/result.json)
+      - name: Add PR comment
+        if: failure()
+        uses: actions/github-script@v8
+        with:
+          script: |
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: ':warning: [Visual differences detected](https://www.artifact.ci/artifact/view/' + context.repo.owner + '/' + context.repo.repo + '/run/' + context.runId + '/diff)'
+            })
