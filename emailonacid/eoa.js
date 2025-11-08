@@ -16,15 +16,18 @@ async function run() {
 
     const email = await createEmail(emailContent);
 
-    for (const client of clients) {
+    const actualClients = email.clients;
+
+    const missingClients = clients.filter(client => !actualClients.includes(client));
+
+    if (missingClients.length > 0) {
+        console.warn(`Unable to create screenshots for: ${missingClients.join(', ')}`);
+    }
+
+    for (const client of actualClients) {
         const screenshot = await email.screenshot(client);
 
-        const callback = (err) => {
-            console.log(`[screenshot] ${client} ready`);
-            if (err) throw err;
-        }
-
-        fs.writeFileSync(`../output/${client}.png`, screenshot, callback);
+        fs.writeFileSync(`../output/${client}.png`, screenshot);
     }
 
     // assert screenshot at this point
