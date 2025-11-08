@@ -1,10 +1,12 @@
 {
   "devDependencies": {
     "@researchgate/emailonacid-snapshot": "^4.0.4",
+    "cypress-image-diff-html-report": "^2.2.0",
     "odiff-bin": "^4.1.1"
   },
   "scripts": {
     "eoa": "node eoa.js",
-    "diff": "node diff.js"
+    "diff": "node diff.js",
+    "html": "cypress-image-diff-html-report generate --o ../diff --baseDir ../diff --rf ../diff/result.json"
   }
 }

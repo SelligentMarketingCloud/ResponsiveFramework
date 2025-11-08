@@ -3,7 +3,10 @@ const fs = require('fs');
 
 async function run() {
 
-    const clients = ['applemail16', 'iphone16promax_18_dm', 'gmailcom-lm_edgecurrent_win10'];
+    const clients = fs.readFileSync('clients.txt', 'utf-8')
+        .split('\n')
+        .map(line => line.trim())
+        .filter(line => line && !line.startsWith('#'));
 
     const createEmail = configureCreateEmail({
         clients
