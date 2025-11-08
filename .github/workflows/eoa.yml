@@ -82,7 +82,5 @@ jobs:
               issue_number: context.issue.number,
               owner: context.repo.owner,
               repo: context.repo.repo,
-              body: `:warning: Your changes introduced visual differences.
-
-                [Check out what changed](https://www.artifact.ci/artifact/view/${context.repo.owner}/${context.repo.repo}/run/${context.runId}.${context.runNumber}/diff)`
+              body: `:warning: Your changes introduced [visual differences](https://www.artifact.ci/artifact/view/${context.repo.owner}/${context.repo.repo}/run/${context.runId}.${context.runNumber}/diff)`
             })
