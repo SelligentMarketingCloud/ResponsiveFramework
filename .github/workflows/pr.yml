@@ -10,7 +10,7 @@ jobs:
       EOA_ACCOUNT_PASSWORD: ${{ secrets.EOA_ACCOUNT_PASSWORD }}
     with:
       EOA_API_KEY: ${{ vars.EOA_API_KEY }}
-      mode: 'artifact'
+      mode: 'cache'
 
   diff:
     needs: validate
@@ -23,23 +23,27 @@ jobs:
           lfs: true
       - name: Screenshot baseline
         run: mkdir -p diff/base && cp -r output/*.png diff/base
-      - name: Download screenshot artifacts
-        uses: actions/download-artifact@v4
+      - name: Restore screenshots from cache
+        uses: actions/cache/restore@v4
         with:
-          name: screenshots
           path: diff/compare
+          key: ${{ github.run_id }}-screenshots
       - name: List files in the repository
         run: find ${{ github.workspace }}
       - name: Install dependencies
         run: npm ci
         working-directory: ./emailonacid
       - name: Compare screenshots
+        id: create-screenshots
         run: mkdir -p ../diff/diff && npm run diff
         working-directory: ./emailonacid
       - name: Generate report screenshots
+        id: create-report
+        if: success() || steps.create-screenshots.conclusion == 'failure'
         run: npm run report-ci
         working-directory: ./emailonacid
       - name: Publish diff report as artifact
+        if: success() || steps.create-report.conclusion == 'success'
         uses: actions/upload-artifact@v4
         with:
           name: diff
