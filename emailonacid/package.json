@@ -6,7 +6,11 @@
   },
   "scripts": {
     "eoa": "node eoa.js",
-    "diff": "node diff.js",
-    "html": "cypress-image-diff-html-report generate --o ../diff --baseDir ../diff --rf ../diff/result.json"
+    "copy-base": "mkdir -p ../diff/base && cd .. && git ls-tree -r --name-only HEAD output/ | grep '\\.png$' | while read file; do git show HEAD:\"$file\" | git lfs smudge > \"diff/base/$(basename \"$file\")\"; done",
+    "copy-compare": "mkdir -p ../diff/compare && cp -R ../output/*.png ../diff/compare",
+    "diff": "mkdir -p ../diff/diff && node diff.js",
+    "report-ci": "cd ../diff && cypress-image-diff-html-report generate --o . --rf result.json",
+    "report-live": "cd ../diff && cypress-image-diff-html-report start --autoOpen --rf result.json",
+    "report-local": "npm run eoa && npm run copy-base && npm run copy-compare && npm run diff && npm run report-live"
   }
 }
