@@ -78,7 +78,7 @@ jobs:
         if: failure()
         uses: actions/github-script@v8
         env:
-          INPUT_RUN_ATTEMPT: ${{ github.run_attempt }}
+          INPUT_RUNATTEMPT: ${{ github.run_attempt }}
         with:
           script: |
             github.rest.issues.createComment({
@@ -86,6 +86,6 @@ jobs:
               owner: context.repo.owner,
               repo: context.repo.repo,
               body: `### :warning: Your changes introduced visual differences.
-              1. First [login here](https://www.artifact.ci/artifact/view/${context.repo.owner}/${context.repo.repo}/run/${context.runId}.${core.getInput('runAttempt')}/diff)
-              2. Then [view the differences here](https://www.artifact.ci/artifact/view/${context.repo.owner}/${context.repo.repo}/run/${context.runId}.${core.getInput('runAttempt')}/diff/index.html)`
+              1. First [login here](https://www.artifact.ci/artifact/view/${context.repo.owner}/${context.repo.repo}/run/${context.runId}.${core.getInput('runattempt')}/diff)
+              2. Then [view the differences here](https://www.artifact.ci/artifact/view/${context.repo.owner}/${context.repo.repo}/run/${context.runId}.${core.getInput('runattempt')}/diff/index.html)`
             })
