@@ -1,0 +1,768 @@
+{
+    "clients": {
+        "aolcom-lm_chrcurrent_win10": {
+            "id": "aolcom-lm_chrcurrent_win10",
+            "client": "AOL.com",
+            "os": "Windows 10",
+            "category": "Web",
+            "browser": "Chrome",
+            "default": true
+        },
+        "aolcom-dm_chrcurrent_win10": {
+            "id": "aolcom-dm_chrcurrent_win10",
+            "client": "AOL.com",
+            "os": "Windows 10 (Dark Mode)",
+            "category": "Web",
+            "browser": "Chrome",
+            "default": true
+        },
+        "aolcom-lm_edgecurrent_win10": {
+            "id": "aolcom-lm_edgecurrent_win10",
+            "client": "AOL.com",
+            "os": "Windows 10",
+            "category": "Web",
+            "browser": "Edge",
+            "default": true
+        },
+        "aolcom-dm_edgecurrent_win10": {
+            "id": "aolcom-dm_edgecurrent_win10",
+            "client": "AOL.com",
+            "os": "Windows 10 (Dark Mode)",
+            "category": "Web",
+            "browser": "Edge",
+            "default": true
+        },
+        "aolcom-lm_ffcurrent_win10": {
+            "id": "aolcom-lm_ffcurrent_win10",
+            "client": "AOL.com",
+            "os": "Windows 10",
+            "category": "Web",
+            "browser": "Firefox",
+            "default": true
+        },
+        "aolcom-dm_ffcurrent_win10": {
+            "id": "aolcom-dm_ffcurrent_win10",
+            "client": "AOL.com",
+            "os": "Windows 10 (Dark Mode)",
+            "category": "Web",
+            "browser": "Firefox",
+            "default": true
+        },
+        "applemail16": {
+            "id": "applemail16",
+            "client": "Apple Mail 16",
+            "os": "macOS  13",
+            "category": "Application",
+            "default": true
+        },
+        "applemail16_dm": {
+            "id": "applemail16_dm",
+            "client": "Apple Mail 16",
+            "os": "macOS 13 (Dark Mode)",
+            "category": "Application",
+            "default": true
+        },
+        "freefr-lm_chrcurrent_win10": {
+            "id": "freefr-lm_chrcurrent_win10",
+            "client": "Free.fr",
+            "os": "Windows 10",
+            "category": "Web",
+            "browser": "Chrome",
+            "default": true
+        },
+        "freefr-dm_chrcurrent_win10": {
+            "id": "freefr-dm_chrcurrent_win10",
+            "client": "Free.fr",
+            "os": "Windows 10 (Dark Mode)",
+            "category": "Web",
+            "browser": "Chrome",
+            "default": true
+        },
+        "freefr-lm_edgecurrent_win10": {
+            "id": "freefr-lm_edgecurrent_win10",
+            "client": "Free.fr",
+            "os": "Windows 10",
+            "category": "Web",
+            "browser": "Edge",
+            "default": true
+        },
+        "freefr-dm_edgecurrent_win10": {
+            "id": "freefr-dm_edgecurrent_win10",
+            "client": "Free.fr",
+            "os": "Windows 10 (Dark Mode)",
+            "category": "Web",
+            "browser": "Edge",
+            "default": true
+        },
+        "freefr-lm_ffcurrent_win10": {
+            "id": "freefr-lm_ffcurrent_win10",
+            "client": "Free.fr",
+            "os": "Windows 10",
+            "category": "Web",
+            "browser": "Firefox",
+            "default": true
+        },
+        "freefr-dm_ffcurrent_win10": {
+            "id": "freefr-dm_ffcurrent_win10",
+            "client": "Free.fr",
+            "os": "Windows 10 (Dark Mode)",
+            "category": "Web",
+            "browser": "Firefox",
+            "default": true
+        },
+        "android12_gmailapp_pixel6_lm": {
+            "id": "android12_gmailapp_pixel6_lm",
+            "client": "Gmail App Pixel 6",
+            "os": "Android 12",
+            "category": "Mobile",
+            "default": true
+        },
+        "android12_gmailapp_pixel6_dm": {
+            "id": "android12_gmailapp_pixel6_dm",
+            "client": "Gmail App Pixel 6",
+            "os": "Android 12 (Dark Mode)",
+            "category": "Mobile",
+            "default": true
+        },
+        "android13_gmailapp_pixel7_dm": {
+            "id": "android13_gmailapp_pixel7_dm",
+            "client": "Gmail App Pixel 7",
+            "os": "Android 13 (Dark Mode)",
+            "category": "Mobile",
+            "default": true
+        },
+        "android13_gmailapp_pixel7_lm": {
+            "id": "android13_gmailapp_pixel7_lm",
+            "client": "Gmail App Pixel 7",
+            "os": "Android 13",
+            "category": "Mobile",
+            "default": true
+        },
+        "android14_gmailapp_pixel8_lm": {
+            "id": "android14_gmailapp_pixel8_lm",
+            "client": "Gmail App Pixel 8",
+            "os": "Android 14",
+            "category": "Mobile",
+            "default": true
+        },
+        "android14_gmailapp_pixel8_dm": {
+            "id": "android14_gmailapp_pixel8_dm",
+            "client": "Gmail App Pixel 8",
+            "os": "Android 14 (Dark Mode)",
+            "category": "Mobile",
+            "default": true
+        },
+        "android15_gmailapp_pixel9_lm": {
+            "id": "android15_gmailapp_pixel9_lm",
+            "client": "Gmail App Pixel 9",
+            "os": "Android 15",
+            "category": "Mobile",
+            "default": true
+        },
+        "android15_gmailapp_pixel9_dm": {
+            "id": "android15_gmailapp_pixel9_dm",
+            "client": "Gmail App Pixel 9",
+            "os": "Android 15 (Dark Mode)",
+            "category": "Mobile",
+            "default": true
+        },
+        "android16_gmailapp_pixel10_lm": {
+            "id": "android16_gmailapp_pixel10_lm",
+            "client": "Gmail App Pixel 10",
+            "os": "Android 16",
+            "category": "Mobile",
+            "default": true
+        },
+        "android16_gmailapp_pixel10_dm": {
+            "id": "android16_gmailapp_pixel10_dm",
+            "client": "Gmail App Pixel 10",
+            "os": "Android 16 (Dark Mode)",
+            "category": "Mobile",
+            "default": true
+        },
+        "gmailcom-lm_chrcurrent_win10": {
+            "id": "gmailcom-lm_chrcurrent_win10",
+            "client": "Gmail.com",
+            "os": "Windows 10",
+            "category": "Web",
+            "browser": "Chrome",
+            "default": true
+        },
+        "gmailcom-dm_chrcurrent_win10": {
+            "id": "gmailcom-dm_chrcurrent_win10",
+            "client": "Gmail.com",
+            "os": "Windows 10 (Dark Mode)",
+            "category": "Web",
+            "browser": "Chrome",
+            "default": true
+        },
+        "gmailcom-lm_edgecurrent_win10": {
+            "id": "gmailcom-lm_edgecurrent_win10",
+            "client": "Gmail.com",
+            "os": "Windows 10",
+            "category": "Web",
+            "browser": "Edge",
+            "image_blocking": true,
+            "default": true
+        },
+        "gmailcom-dm_edgecurrent_win10": {
+            "id": "gmailcom-dm_edgecurrent_win10",
+            "client": "Gmail.com",
+            "os": "Windows 10 (Dark Mode)",
+            "category": "Web",
+            "browser": "Edge",
+            "default": true
+        },
+        "gmailcom-lm_ffcurrent_win10": {
+            "id": "gmailcom-lm_ffcurrent_win10",
+            "client": "Gmail.com",
+            "os": "Windows 10",
+            "category": "Web",
+            "browser": "Firefox",
+            "default": true
+        },
+        "gmailcom-dm_ffcurrent_win10": {
+            "id": "gmailcom-dm_ffcurrent_win10",
+            "client": "Gmail.com",
+            "os": "Windows 10 (Dark Mode)",
+            "category": "Web",
+            "browser": "Firefox",
+            "image_blocking": true,
+            "default": true
+        },
+        "gmxnet-lm_chrcurrent_win10": {
+            "id": "gmxnet-lm_chrcurrent_win10",
+            "client": "GMX",
+            "os": "Windows 10",
+            "category": "Web",
+            "browser": "Chrome",
+            "default": true
+        },
+        "gmxnet-lm_edgecurrent_win10": {
+            "id": "gmxnet-lm_edgecurrent_win10",
+            "client": "GMX",
+            "os": "Windows 10",
+            "category": "Web",
+            "browser": "Edge",
+            "default": true
+        },
+        "gmxnet-lm_ffcurrent_win10": {
+            "id": "gmxnet-lm_ffcurrent_win10",
+            "client": "GMX",
+            "os": "Windows 10",
+            "category": "Web",
+            "browser": "Firefox",
+            "default": true
+        },
+        "iphone14pro_16": {
+            "id": "iphone14pro_16",
+            "client": "iPhone 14 Pro",
+            "os": "iOS 16",
+            "category": "Mobile",
+            "default": true
+        },
+        "iphone14pro_16_dm": {
+            "id": "iphone14pro_16_dm",
+            "client": "iPhone 14 Pro",
+            "os": "iOS 16 (Dark Mode)",
+            "category": "Mobile",
+            "default": true
+        },
+        "iphone14promax_16": {
+            "id": "iphone14promax_16",
+            "client": "iPhone 14 Pro Max",
+            "os": "iOS 16",
+            "category": "Mobile",
+            "default": true
+        },
+        "iphone14promax_16_dm": {
+            "id": "iphone14promax_16_dm",
+            "client": "iPhone 14 Pro Max",
+            "os": "iOS 16 (Dark Mode)",
+            "category": "Mobile",
+            "default": true
+        },
+        "iphone14_16": {
+            "id": "iphone14_16",
+            "client": "iPhone 14",
+            "os": "iOS 16",
+            "category": "Mobile",
+            "default": true
+        },
+        "iphone14_16_dm": {
+            "id": "iphone14_16_dm",
+            "client": "iPhone 14",
+            "os": "iOS 16 (Dark Mode)",
+            "category": "Mobile",
+            "default": true
+        },
+        "iphone15_17": {
+            "id": "iphone15_17",
+            "client": "iPhone 15",
+            "os": "iOS 17",
+            "category": "Mobile",
+            "default": true
+        },
+        "iphone15plus_17": {
+            "id": "iphone15plus_17",
+            "client": "iPhone 15 Plus",
+            "os": "iOS 17",
+            "category": "Mobile",
+            "default": true
+        },
+        "iphone15_17_dm": {
+            "id": "iphone15_17_dm",
+            "client": "iPhone 15",
+            "os": "iOS 17 (Dark Mode)",
+            "category": "Mobile",
+            "default": true
+        },
+        "iphone15plus_17_dm": {
+            "id": "iphone15plus_17_dm",
+            "client": "iPhone 15 Plus",
+            "os": "iOS 17 (Dark Mode)",
+            "category": "Mobile",
+            "default": true
+        },
+        "iphone15pro_17": {
+            "id": "iphone15pro_17",
+            "client": "iPhone 15 Pro",
+            "os": "iOS 17",
+            "category": "Mobile",
+            "default": true
+        },
+        "iphone15pro_17_dm": {
+            "id": "iphone15pro_17_dm",
+            "client": "iPhone 15 Pro",
+            "os": "iOS 17 (Dark Mode)",
+            "category": "Mobile",
+            "default": true
+        },
+        "iphone15promax_17": {
+            "id": "iphone15promax_17",
+            "client": "iPhone 15 Pro Max",
+            "os": "iOS 17",
+            "category": "Mobile",
+            "default": true
+        },
+        "iphone15promax_17_dm": {
+            "id": "iphone15promax_17_dm",
+            "client": "iPhone 15 Pro Max",
+            "os": "iOS 17 (Dark Mode)",
+            "category": "Mobile",
+            "default": true
+        },
+        "iphone16_18": {
+            "id": "iphone16_18",
+            "client": "iPhone 16",
+            "os": "iOS 18",
+            "category": "Mobile",
+            "default": true
+        },
+        "iphone16_18_dm": {
+            "id": "iphone16_18_dm",
+            "client": "iPhone 16",
+            "os": "iOS  18 (Dark Mode)",
+            "category": "Mobile",
+            "default": true
+        },
+        "iphone16pro_18": {
+            "id": "iphone16pro_18",
+            "client": "iPhone 16 Pro",
+            "os": "iOS 18",
+            "category": "Mobile",
+            "default": true
+        },
+        "iphone16pro_18_dm": {
+            "id": "iphone16pro_18_dm",
+            "client": "iPhone 16 Pro",
+            "os": "iOS 18 (Dark Mode)",
+            "category": "Mobile",
+            "default": true
+        },
+        "iphone16promax_18": {
+            "id": "iphone16promax_18",
+            "client": "iPhone 16 Pro Max",
+            "os": "iOS 18",
+            "category": "Mobile",
+            "default": true
+        },
+        "iphone16promax_18_dm": {
+            "id": "iphone16promax_18_dm",
+            "client": "iPhone 16 Pro Max",
+            "os": "iOS 18 (Dark Mode)",
+            "category": "Mobile",
+            "default": true
+        },
+        "iphone17_26": {
+            "id": "iphone17_26",
+            "client": "iPhone 17",
+            "os": "iOS 26",
+            "category": "Mobile",
+            "default": true
+        },
+        "iphone17_26_dm": {
+            "id": "iphone17_26_dm",
+            "client": "iPhone 17",
+            "os": "iOS 26 (Dark Mode)",
+            "category": "Mobile",
+            "default": true
+        },
+        "iphone17pro_26": {
+            "id": "iphone17pro_26",
+            "client": "iPhone 17 Pro",
+            "os": "iOS 26",
+            "category": "Mobile",
+            "default": true
+        },
+        "iphone17pro_26_dm": {
+            "id": "iphone17pro_26_dm",
+            "client": "iPhone 17 Pro",
+            "os": "iOS 26 (Dark Mode)",
+            "category": "Mobile",
+            "default": true
+        },
+        "iphone17promax_26_dm": {
+            "id": "iphone17promax_26_dm",
+            "client": "iPhone 17 Pro Max",
+            "os": "iOS 26 (Dark Mode)",
+            "category": "Mobile",
+            "default": true
+        },
+        "iphone17promax_26": {
+            "id": "iphone17promax_26",
+            "client": "iPhone 17 Pro Max",
+            "os": "iOS 26",
+            "category": "Mobile",
+            "default": true
+        },
+        "liberoit-lm_chrcurrent_win10": {
+            "id": "liberoit-lm_chrcurrent_win10",
+            "client": "Libero",
+            "os": "Windows 10",
+            "category": "Web",
+            "browser": "Chrome",
+            "default": true
+        },
+        "liberoit-lm_edgecurrent_win10": {
+            "id": "liberoit-lm_edgecurrent_win10",
+            "client": "Libero",
+            "os": "Windows 10",
+            "category": "Web",
+            "browser": "Edge",
+            "default": true
+        },
+        "liberoit-lm_ffcurrent_win10": {
+            "id": "liberoit-lm_ffcurrent_win10",
+            "client": "Libero",
+            "os": "Windows 10",
+            "category": "Web",
+            "browser": "Firefox",
+            "default": true
+        },
+        "m365com-lm_chrcurrent_win10": {
+            "id": "m365com-lm_chrcurrent_win10",
+            "client": "Microsoft365.com",
+            "os": "Windows 10",
+            "category": "Web",
+            "browser": "Chrome",
+            "default": true
+        },
+        "m365com-dm_chrcurrent_win10": {
+            "id": "m365com-dm_chrcurrent_win10",
+            "client": "Microsoft365.com",
+            "os": "Windows 10 (Dark Mode)",
+            "category": "Web",
+            "browser": "Chrome",
+            "default": true
+        },
+        "m365com-lm_edgecurrent_win10": {
+            "id": "m365com-lm_edgecurrent_win10",
+            "client": "Microsoft365.com",
+            "os": "Windows 10",
+            "category": "Web",
+            "browser": "Edge",
+            "default": true
+        },
+        "m365com-dm_edgecurrent_win10": {
+            "id": "m365com-dm_edgecurrent_win10",
+            "client": "Microsoft365.com",
+            "os": "Windows 10 (Dark Mode)",
+            "category": "Web",
+            "browser": "Edge",
+            "default": true
+        },
+        "m365com-lm_ffcurrent_win10": {
+            "id": "m365com-lm_ffcurrent_win10",
+            "client": "Microsoft365.com",
+            "os": "Windows 10",
+            "category": "Web",
+            "browser": "Firefox",
+            "default": true
+        },
+        "m365com-dm_ffcurrent_win10": {
+            "id": "m365com-dm_ffcurrent_win10",
+            "client": "Microsoft365.com",
+            "os": "Windows 10 (Dark Mode)",
+            "category": "Web",
+            "browser": "Firefox",
+            "default": true
+        },
+        "m365_mac13_lm_dt": {
+            "id": "m365_mac13_lm_dt",
+            "client": "Outlook Microsoft 365",
+            "os": "macOS 13",
+            "category": "Application",
+            "default": true
+        },
+        "m365_mac13_dm_dt": {
+            "id": "m365_mac13_dm_dt",
+            "client": "Outlook Microsoft 365",
+            "os": "macOS 13 (Dark Mode)",
+            "category": "Application",
+            "default": true
+        },
+        "m365_w11_lm_dt": {
+            "id": "m365_w11_lm_dt",
+            "client": "Outlook Microsoft 365",
+            "os": "Windows 11",
+            "category": "Application",
+            "default": true
+        },
+        "o365_w10_lm_dt": {
+            "id": "o365_w10_lm_dt",
+            "client": "Outlook Office 365",
+            "os": "Windows 10",
+            "category": "Application",
+            "default": true
+        },
+        "o365_w10_dm_dt": {
+            "id": "o365_w10_dm_dt",
+            "client": "Outlook Office 365",
+            "os": "Windows 10 (Dark Mode)",
+            "category": "Application",
+            "default": true
+        },
+        "m365_w11_dm_dt": {
+            "id": "m365_w11_dm_dt",
+            "client": "Outlook Microsoft 365",
+            "os": "Windows 11 (Dark Mode)",
+            "category": "Application",
+            "default": true
+        },
+        "outlook16_win10": {
+            "id": "outlook16_win10",
+            "client": "Outlook 2016",
+            "os": "Windows 10",
+            "category": "Application",
+            "default": true
+        },
+        "outlook16_win10_125": {
+            "id": "outlook16_win10_125",
+            "client": "Outlook 2016 (120 dpi)",
+            "os": "Windows 10",
+            "category": "Application",
+            "default": true
+        },
+        "outlook19": {
+            "id": "outlook19",
+            "client": "Outlook 2019",
+            "os": "Windows 10",
+            "category": "Application",
+            "default": true
+        },
+        "outlook19_125": {
+            "id": "outlook19_125",
+            "client": "Outlook 2019 (120 dpi)",
+            "os": "Windows 10",
+            "category": "Application",
+            "default": true
+        },
+        "outlook2021_win11_lm_dt": {
+            "id": "outlook2021_win11_lm_dt",
+            "client": "Outlook 2021",
+            "os": "Windows 11",
+            "category": "Application",
+            "default": true
+        },
+        "outlook2021_win11_dm_dt": {
+            "id": "outlook2021_win11_dm_dt",
+            "client": "Outlook 2021",
+            "os": "Windows 11 (Dark Mode)",
+            "category": "Application",
+            "default": true
+        },
+        "android12_outlookapp_pixel6_lm": {
+            "id": "android12_outlookapp_pixel6_lm",
+            "client": "Outlook App Pixel 6",
+            "os": "Android 12",
+            "category": "Mobile",
+            "default": true
+        },
+        "android12_outlookapp_pixel6_dm": {
+            "id": "android12_outlookapp_pixel6_dm",
+            "client": "Outlook App Pixel 6",
+            "os": "Android 12 (Dark Mode)",
+            "category": "Mobile",
+            "default": true
+        },
+        "iphone13ol_15": {
+            "id": "iphone13ol_15",
+            "client": "Outlook App iPhone 13",
+            "os": "iOS 15",
+            "category": "Mobile",
+            "default": true
+        },
+        "iphone13ol_15_dm": {
+            "id": "iphone13ol_15_dm",
+            "client": "Outlook App iPhone 13",
+            "os": "iOS 15 (Dark Mode)",
+            "category": "Mobile",
+            "default": true
+        },
+        "outlookcom-dm_chrcurrent_win10": {
+            "id": "outlookcom-dm_chrcurrent_win10",
+            "client": "Outlook.com",
+            "os": "Windows 10 (Dark Mode)",
+            "category": "Web",
+            "browser": "Chrome",
+            "default": true
+        },
+        "outlookcom-lm_chrcurrent_win10": {
+            "id": "outlookcom-lm_chrcurrent_win10",
+            "client": "Outlook.com",
+            "os": "Windows 10",
+            "category": "Web",
+            "browser": "Chrome",
+            "default": true
+        },
+        "outlookcom-lm_edgecurrent_win10": {
+            "id": "outlookcom-lm_edgecurrent_win10",
+            "client": "Outlook.com",
+            "os": "Windows 10",
+            "category": "Web",
+            "browser": "Edge",
+            "default": true
+        },
+        "outlookcom-dm_edgecurrent_win10": {
+            "id": "outlookcom-dm_edgecurrent_win10",
+            "client": "Outlook.com",
+            "os": "Windows 10 (Dark Mode)",
+            "category": "Web",
+            "browser": "Edge",
+            "default": true
+        },
+        "outlookcom-lm_ffcurrent_win10": {
+            "id": "outlookcom-lm_ffcurrent_win10",
+            "client": "Outlook.com",
+            "os": "Windows 10",
+            "category": "Web",
+            "browser": "Firefox",
+            "default": true
+        },
+        "outlookcom-dm_ffcurrent_win10": {
+            "id": "outlookcom-dm_ffcurrent_win10",
+            "client": "Outlook.com",
+            "os": "Windows 10 (Dark Mode)",
+            "category": "Web",
+            "browser": "Firefox",
+            "default": true
+        },
+        "tonlinede-lm_chrcurrent_win10": {
+            "id": "tonlinede-lm_chrcurrent_win10",
+            "client": "T-Online",
+            "os": "Windows 10",
+            "category": "Web",
+            "browser": "Chrome",
+            "default": true
+        },
+        "tonlinede-lm_edgecurrent_win10": {
+            "id": "tonlinede-lm_edgecurrent_win10",
+            "client": "T-Online",
+            "os": "Windows 10",
+            "category": "Web",
+            "browser": "Edge",
+            "default": true
+        },
+        "tonlinede-lm_ffcurrent_win10": {
+            "id": "tonlinede-lm_ffcurrent_win10",
+            "client": "T-Online",
+            "os": "Windows 10",
+            "category": "Web",
+            "browser": "Firefox",
+            "default": true
+        },
+        "webde-lm_chrcurrent_win10": {
+            "id": "webde-lm_chrcurrent_win10",
+            "client": "Web.de",
+            "os": "Windows 10",
+            "category": "Web",
+            "browser": "Chrome",
+            "default": true
+        },
+        "webde-lm_edgecurrent_win10": {
+            "id": "webde-lm_edgecurrent_win10",
+            "client": "Web.de",
+            "os": "Windows 10",
+            "category": "Web",
+            "browser": "Edge",
+            "default": true
+        },
+        "webde-lm_ffcurrent_win10": {
+            "id": "webde-lm_ffcurrent_win10",
+            "client": "Web.de",
+            "os": "Windows 10",
+            "category": "Web",
+            "browser": "Firefox",
+            "default": true
+        },
+        "yahoocom-lm_chrcurrent_win10": {
+            "id": "yahoocom-lm_chrcurrent_win10",
+            "client": "Yahoo.com",
+            "os": "Windows 10",
+            "category": "Web",
+            "browser": "Chrome",
+            "default": true
+        },
+        "yahoocom-dm_chrcurrent_win10": {
+            "id": "yahoocom-dm_chrcurrent_win10",
+            "client": "Yahoo.com",
+            "os": "Windows 10 (Dark Mode)",
+            "category": "Web",
+            "browser": "Chrome",
+            "default": true
+        },
+        "yahoocom-lm_edgecurrent_win10": {
+            "id": "yahoocom-lm_edgecurrent_win10",
+            "client": "Yahoo.com",
+            "os": "Windows 10",
+            "category": "Web",
+            "browser": "Edge",
+            "default": true
+        },
+        "yahoocom-dm_edgecurrent_win10": {
+            "id": "yahoocom-dm_edgecurrent_win10",
+            "client": "Yahoo.com",
+            "os": "Windows 10 (Dark Mode)",
+            "category": "Web",
+            "browser": "Edge",
+            "default": true
+        },
+        "yahoocom-lm_ffcurrent_win10": {
+            "id": "yahoocom-lm_ffcurrent_win10",
+            "client": "Yahoo.com",
+            "os": "Windows 10",
+            "category": "Web",
+            "browser": "Firefox",
+            "default": true
+        },
+        "yahoocom-dm_ffcurrent_win10": {
+            "id": "yahoocom-dm_ffcurrent_win10",
+            "client": "Yahoo.com",
+            "os": "Windows 10 (Dark Mode)",
+            "category": "Web",
+            "browser": "Firefox",
+            "default": true
+        }
+    }
+}

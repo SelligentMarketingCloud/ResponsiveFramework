@@ -1,8 +1,16 @@
 {
   "devDependencies": {
-    "@researchgate/emailonacid-snapshot": "^4.0.4"
+    "@researchgate/emailonacid-snapshot": "^4.0.4",
+    "cypress-image-diff-html-report": "^2.2.0",
+    "odiff-bin": "^4.1.1"
   },
   "scripts": {
-    "screenshots": "node main.js"
+    "eoa": "node eoa.js",
+    "copy-base": "mkdir -p ../diff/base && cd .. && git ls-tree -r --name-only HEAD output/ | grep '\\.png$' | while read file; do git show HEAD:\"$file\" | git lfs smudge > \"diff/base/$(basename \"$file\")\"; done",
+    "copy-compare": "mkdir -p ../diff/compare && cp -R ../output/*.png ../diff/compare",
+    "diff": "mkdir -p ../diff/diff && node diff.js",
+    "report-ci": "cd ../diff && cypress-image-diff-html-report generate --o . --rf result.json",
+    "report-live": "cd ../diff && cypress-image-diff-html-report start --autoOpen --rf result.json",
+    "report-local": "npm run eoa && npm run copy-base && npm run copy-compare && npm run diff && npm run report-live"
   }
 }

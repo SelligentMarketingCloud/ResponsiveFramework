@@ -1,0 +1,89 @@
+name: Validate Responsive Framework
+
+on:
+  workflow_call:
+    secrets:
+      EOA_ACCOUNT_PASSWORD:
+        required: true
+    inputs:
+      EOA_API_KEY:
+        required: true
+        type: string
+      mode:
+        required: false
+        type: string
+
+jobs:
+  validate:
+    name: Capture and compare screenshots
+    runs-on: ubuntu-latest
+    environment: eoa
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          lfs: true
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: '18'
+      - name: Restore diff from cache
+        id: cache-diff-restore
+        uses: actions/cache/restore@v4
+        with:
+          path: diff
+          key: ${{ hashFiles('emailonacid/clients.txt') }}-${{ hashFiles('source/latest.html') }}-diff
+      - name: Copy baseline screenshots for caching
+        if: steps.cache-diff-restore.outputs.cache-hit != 'true'
+        run: mkdir -p diff/base && cp -r output/*.png diff/base
+      - name: Install dependencies
+        if: steps.cache-diff-restore.outputs.cache-hit != 'true'
+        run: npm ci
+        working-directory: ./emailonacid
+      - name: Capture screenshots
+        if: steps.cache-diff-restore.outputs.cache-hit != 'true'
+        run: npm run eoa
+        working-directory: ./emailonacid
+        env:
+          EOA_ACCOUNT_PASSWORD: ${{ secrets.EOA_ACCOUNT_PASSWORD }}
+          EOA_API_KEY: ${{ inputs.EOA_API_KEY }}
+      - name: Copy compare screenshots for caching
+        if: steps.cache-diff-restore.outputs.cache-hit != 'true'
+        run: mkdir -p diff/compare && cp -r output/*.png diff/compare
+      - name: Compare screenshots
+        if: steps.cache-diff-restore.outputs.cache-hit != 'true'
+        id: create-screenshots
+        run: mkdir -p ../diff/diff && npm run diff
+        working-directory: ./emailonacid
+      - name: Generate report screenshots
+        id: create-report
+        if: steps.cache-diff-restore.outputs.cache-hit != 'true' && (success() || steps.create-screenshots.conclusion == 'failure')
+        run: npm run report-ci
+        working-directory: ./emailonacid
+      - name: Save diff to cache
+        if: steps.cache-diff-restore.outputs.cache-hit != 'true'
+        id: cache-primes-save
+        uses: actions/cache/save@v4
+        with:
+          path: diff
+          key: ${{ steps.cache-diff-restore.outputs.cache-primary-key }}
+      - name: Publish diff report as artifact
+        if: success() || steps.create-report.conclusion == 'success'
+        uses: actions/upload-artifact@v4
+        with:
+          name: diff
+          path: diff
+      - name: Fail if there are visual differences
+        run: exit $(jq -r .totalFailed diff/result.json)
+      - name: Add PR comment
+        if: failure()
+        uses: actions/github-script@v8
+        with:
+          script: |
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: `### :warning: Your changes introduced visual differences.
+              1. First [login here](https://www.artifact.ci/artifact/view/${context.repo.owner}/${context.repo.repo}/sha/${context.sha}/diff)
+              2. Then [view the differences here](https://www.artifact.ci/artifact/view/${context.repo.owner}/${context.repo.repo}/sha/${context.sha}/diff/index.html)`
+            })
