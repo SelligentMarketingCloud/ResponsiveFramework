@@ -31,7 +31,7 @@ jobs:
         uses: actions/cache/restore@v4
         with:
           path: diff
-          key: ${{ hashFiles('emailonacid/clients.txt') }}-${{ hashFiles('source/latest.html') }}-diff
+          key: ${{ hashFiles('emailonacid/clients.txt') }}-${{ hashFiles('source/latest.html')-${{ hashFiles('output/*.png') }}-diff
       - name: Copy baseline screenshots for caching
         if: steps.cache-diff-restore.outputs.cache-hit != 'true'
         run: mkdir -p diff/base && cp -r output/*.png diff/base
