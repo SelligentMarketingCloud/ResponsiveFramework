@@ -17,6 +17,7 @@ jobs:
   validate:
     name: Capture and compare screenshots
     runs-on: ubuntu-latest
+    environment: eoa
     steps:
       - uses: actions/checkout@v5
         with:
