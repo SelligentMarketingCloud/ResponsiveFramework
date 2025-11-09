@@ -75,7 +75,7 @@ jobs:
       - name: Fail if there are visual differences
         run: exit $(jq -r .totalFailed diff/result.json)
       - name: Add PR comment
-        if: failure()
+        if: failure() && github.event_name == 'pull_request'
         uses: actions/github-script@v8
         env:
           INPUT_RUNATTEMPT: ${{ github.run_attempt }}
