@@ -1,6 +1,42 @@
 const { compare } = require("odiff-bin");
 const fs = require('fs');
 
+async function createDiff(threshold, clientId, clientsMap) {
+
+    const failureThreshold = threshold;
+
+    const { reason, diffPercentage } = await compare(
+        `../diff/base/${clientId}.png`,
+        `../diff/compare/${clientId}.png`,
+        `../diff/diff/${clientId}.png`, {
+        failureThreshold
+    }
+    );
+
+    const percentage = reason == 'pixel-diff'
+        ? diffPercentage / 100
+        : null;
+
+    const match = percentage < failureThreshold;
+
+    const { client, os, category, browser } = clientsMap[clientId];
+
+    const name = [os, category, browser]
+        .filter(x => x)
+        .join(' / ');
+
+    console[match ? 'log' : 'error'](`[diff] ${clientId} match: ${match} ${reason ? '- ' + reason : ''}`);
+
+    return {
+        clientId,
+        match,
+        percentage,
+        failureThreshold,
+        client,
+        name,
+    };
+}
+
 async function run() {
 
     const clientIds = fs.readFileSync('clients.txt', 'utf-8')
@@ -12,35 +48,13 @@ async function run() {
 
     fs.mkdirSync('../output/diff', { recursive: true });
 
-    const threshold = 0.1;
+    const threshold = 0.01;
 
-    const allDiffs = await Promise.all(clientIds.map(async (clientId) => {
-
-        const { match, reason, diffPercentage } = await compare(
-            `../diff/base/${clientId}.png`,
-            `../diff/compare/${clientId}.png`,
-            `../diff/diff/${clientId}.png`, {
-                threshold
-            }
-        );
-
-        console[match ? 'log' : 'error']
-            (`[diff] ${clientId} match: ${match} ${reason ? '- ' + reason : ''}`);
-
-        const { client, os, category, browser } = clientsMap[clientId];
-
-        return {
-            clientId,
-            match,
-            reason,
-            diffPercentage,
-            threshold,
-            client,
-            os,
-            category,
-            browser,
-        }
-    }));
+    const allDiffs = await Promise.all(
+        clientIds.map(async (clientId) => {
+            return await createDiff(threshold, clientId, clientsMap);
+        })
+    );
 
     const groupedDiffs = allDiffs.reduce((acc, diff) => {
         const clientName = diff.client;
@@ -63,13 +77,11 @@ async function run() {
         suites: sortedGroupedDiffs.map((diffs) => ({
             name: diffs[0].client,
             path: `./base/${diffs[0].client}`,
-            tests: diffs.map(({ clientId, match, reason, diffPercentage, threshold, os, category, browser }) => ({
+            tests: diffs.map(({ clientId, match, percentage, failureThreshold, name }) => ({
                 status: match ? 'pass' : 'fail',
-                name: [os, category, browser].filter(x => x).join(' / '),
-                percentage: reason == 'pixel-diff'
-                    ? diffPercentage
-                    : null,
-                failureThreshold: threshold,
+                name,
+                percentage,
+                failureThreshold,
                 specPath: `./base/${clientId}.png`,
                 specFilename: `${clientId}.png`,
                 baselinePath: `./base/${clientId}.png`,
