@@ -1,6 +1,53 @@
 const fs = require('fs');
 const config = require('../emailonacid/clients.json');
 
+function getClasses(prefix, groups, groupName) {
+    const group = groups.find(group => groupName.startsWith(group));
+
+    if (!group) {
+        return [];
+    }
+
+    return [`${prefix}-${group.toLocaleLowerCase().replace(/\s+/g, '-')}`];
+}
+
+function getFigureClasses(client, os, category) {
+
+    const clientGroups = [
+        'AOL.com',
+        'Apple Mail',
+        'Free.fr',
+        'Gmail',
+        'GMX',
+        'iPhone',
+        'Libero',
+        'Microsoft365',
+        'Outlook',
+        'T-Online',
+        'Web.de',
+        'Yahoo.com',
+    ];
+
+    const osGroups = [
+        'iOS',
+        'macOS',
+        'Windows',
+        'Android',
+    ];
+
+    const categories = [
+        'Webmail',
+        'Desktop',
+        'Mobile',
+    ];
+
+    return [
+        ...getClasses('client', clientGroups, client),
+        ...getClasses('os', osGroups, os),
+        ...getClasses('category', categories, category)
+    ];
+}
+
 const clients = fs.readFileSync('clients.txt', 'utf-8')
     .split('\n')
     .map(line => line.trim())
@@ -38,7 +85,13 @@ const clientsHtml = sortedClients.map(({ id, client, os, category, browser }) =>
             /(<(?<element>figcaption[^>]*)>)(.*?)(<\/(\k<element>)>)/gs,
             `<$<element>>${title}</$<element>>`);
 
-    return `${figureLead}<figure${figureAttr}>${transformedFigureHtml}</figure>`;
+    const figureClasses = getFigureClasses(client, os, category).join(' ');
+
+    const figureAttrUpdated = figureAttr.replace(
+        /\s*class="([^"]*)"/,
+        ` class="${figureClasses}"`);
+
+    return `${figureLead}<figure${figureAttrUpdated}>${transformedFigureHtml}</figure>`;
 })
 .join('');
 
