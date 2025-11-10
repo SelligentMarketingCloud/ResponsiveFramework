@@ -9,9 +9,9 @@ async function createDiff(threshold, clientId, clientsMap) {
         `../diff/base/${clientId}.png`,
         `../diff/compare/${clientId}.png`,
         `../diff/diff/${clientId}.png`, {
-        failureThreshold
-    }
-    );
+            failureThreshold,
+            noFailOnFsErrors: true,
+        });
 
     const percentage = reason == 'pixel-diff'
         ? diffPercentage / 100
