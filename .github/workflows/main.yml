@@ -39,6 +39,7 @@ jobs:
           node-version: '18'
       - name: Create html gallery
         run: npm run gallery
+        working-directory: ./emailonacid
       - name: Publish html gallery for GitHub Pages
         uses: actions/upload-pages-artifact@v4
         with: 
