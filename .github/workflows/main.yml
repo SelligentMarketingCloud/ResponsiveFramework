@@ -30,6 +30,20 @@ jobs:
 
     # Specify runner + deployment step
     steps:
-      - name: Deploy to GitHub Pages
+      - uses: actions/checkout@v5
+        with:
+          lfs: true
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: '18'
+      - name: Create html gallery
+        run: npm run gallery
+      - name: Publish html gallery for GitHub Pages
+        uses: actions/upload-pages-artifact@v4
+        with: 
+          path: output
+      - name: Deploy html gallery to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4
+
