@@ -1,17 +1,10 @@
 name: Validate Responsive Framework
 
+permissions:
+  pull-requests: write
+
 on:
   workflow_call:
-    secrets:
-      EOA_ACCOUNT_PASSWORD:
-        required: true
-    inputs:
-      EOA_API_KEY:
-        required: true
-        type: string
-      mode:
-        required: false
-        type: string
 
 jobs:
   validate:
