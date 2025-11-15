@@ -1,6 +1,43 @@
 const fs = require('fs');
 const config = require('../emailonacid/clients.json');
 
+const clientGroups = [
+    'AOL.com',
+    'Apple Mail',
+    'Free.fr',
+    'Gmail',
+    'GMX',
+    'iPhone',
+    'Libero',
+    'Microsoft365',
+    'Outlook',
+    'T-Online',
+    'Web.de',
+    'Yahoo.com',
+];
+
+const osGroups = [
+    'iOS',
+    'macOS',
+    'Windows',
+    'Android',
+];
+
+const categories = [
+    'Webmail',
+    'Desktop',
+    'Mobile',
+];
+
+const brands = {
+    'client-apple-mail': 'fa-apple',
+    'client-iphone': 'fa-apple',
+    'client-gmail': 'fa-google',
+    'client-yahoo-com': 'fa-yahoo',
+    'client-outlook': 'fa-windows',
+    'client-microsoft365': 'fa-windows',
+};
+
 function getClasses(prefix, groups, groupName) {
     const group = groups.find(group => groupName.startsWith(group));
 
@@ -12,34 +49,6 @@ function getClasses(prefix, groups, groupName) {
 }
 
 function getFigureClasses(client, os, category) {
-
-    const clientGroups = [
-        'AOL.com',
-        'Apple Mail',
-        'Free.fr',
-        'Gmail',
-        'GMX',
-        'iPhone',
-        'Libero',
-        'Microsoft365',
-        'Outlook',
-        'T-Online',
-        'Web.de',
-        'Yahoo.com',
-    ];
-
-    const osGroups = [
-        'iOS',
-        'macOS',
-        'Windows',
-        'Android',
-    ];
-
-    const categories = [
-        'Webmail',
-        'Desktop',
-        'Mobile',
-    ];
 
     return [
         ...getClasses('client', clientGroups, client),
@@ -74,15 +83,11 @@ const clientsHtml = sortedClients.map(({ id, client, os, category, browser }) =>
     const figureClasses = getFigureClasses(client, os, category).join(' ');
 
     let iconClass = ''
-    if (figureClasses.includes('client-yahoo-com')) {
-        iconClass = 'fa-yahoo';
-    } else if (figureClasses.includes('client-gmail')) {
-        iconClass = 'fa-google';
-    } else if (figureClasses.includes('client-outlook')) {
-        iconClass = 'fa-windows';
-    } else if (figureClasses.includes('client-apple-mail') ||
-        figureClasses.includes('client-iphone')) {
-        iconClass = 'fa-apple';
+    for (const [key, value] of Object.entries(brands)) {
+        if (figureClasses.includes(key)) {
+            iconClass = value;
+            break;
+        }
     }
 
     const title = [os, category, browser]
@@ -97,11 +102,11 @@ const clientsHtml = sortedClients.map(({ id, client, os, category, browser }) =>
         .replace(/(href|src)="[^"]*"/sg, `$1="${img}"`)
         .replace(/alt="[^"]*"/sg, `alt="${title}"`)
         .replace(
-            /<h2[^>]*>(.*?)<\/h2>/gs,
-            `<h2 class="icon brands ${iconClass}">${client}</h2>`)
+            /<h2(?<attr>[^>]*)>(.*?)<\/h2>/gs,
+            `<h2$<attr>><i class="icon brands ${iconClass}"></i><br />${client}</h2>`)
         .replace(
-            /<figcaption[^>]*>(.*?)<\/figcaption>/gs,
-            `<figcaption>${htmlTitle}</figcaption>`);
+            /<figcaption(?<attr>[^>]*)>(.*?)<\/figcaption>/gs,
+            `<figcaption$<attr>>${htmlTitle}</figcaption>`);
 
     const figureAttrUpdated = figureAttr.replace(
         /\s*class="([^"]*)"/,
