@@ -1,4 +1,35 @@
-applemail16
-iphone16promax_18_dm
+# Desktop web
 gmailcom-lm_edgecurrent_win10
-outlook16_win10
+gmailcom-lm_ffcurrent_win10
+gmailcom-lm_chrcurrent_win10
+
+m365com-lm_edgecurrent_win10
+m365com-lm_ffcurrent_win10
+m365com-lm_chrcurrent_win10
+
+outlookcom-lm_edgecurrent_win10
+outlookcom-lm_ffcurrent_win10
+outlookcom-lm_chrcurrent_win10
+
+yahoocom-lm_edgecurrent_win10
+yahoocom-lm_ffcurrent_win10
+yahoocom-lm_chrcurrent_win10
+
+# Desktop app
+applemail16
+applemail16_dm
+
+m365_mac13_lm_dt
+m365_mac13_dm_dt
+
+o365_w10_lm_dt
+o365_w10_dm_dt
+
+outlook19
+outlook19_125
+
+outlook2021_win11_lm_dt
+outlook2021_win11_dm_dt
+
+# Mobile
+iphone16promax_18_dm
