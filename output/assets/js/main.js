@@ -17,13 +17,28 @@
     });
 
     $window.on('hashchange', function() {
-      const hash = (window.location.hash || '').replace('#', '') || 'all';
+      const clientsHash = (window.location.hash || '').replace('#', '') || 'all';
 
-      if (hash != 'all') {
-        $(`figure:not(.filtered):not(.${hash})`)
+      if (clientsHash != 'all') {
+
+		const notClients = clientsHash
+			.split('&')
+			.map(hash =>
+				`:not(.${hash})`)
+			.join('');
+
+        $(`figure:not(.filtered)${notClients}`)
           .addClass('filtered');
-        $(`figure.filtered.${hash}`)
+
+		const clients = clientsHash
+			.split('&')
+			.map(hash =>
+				`figure.filtered.${hash}`)
+			.join(',');
+
+        $(clients)
           .removeClass('filtered');
+
       } else {
         $(`figure.filtered`)
           .removeClass('filtered');

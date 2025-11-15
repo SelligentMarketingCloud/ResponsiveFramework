@@ -1860,6 +1860,14 @@ input, select, textarea {
       font-family: 'Font Awesome 5 Brands';
     }
 
+	.icon::before {
+		margin-right: 5px;
+	}
+
+	.icon.style2::before {
+		margin-right: auto;
+	}
+
     .icon.style2 {
       -moz-transition: background-color 0.2s ease-in-out, color 0.2s ease-in-out, border-color 0.2s ease-in-out;
       -webkit-transition: background-color 0.2s ease-in-out, color 0.2s ease-in-out, border-color 0.2s ease-in-out;
