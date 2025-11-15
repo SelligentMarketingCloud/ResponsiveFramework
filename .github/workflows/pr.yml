@@ -6,3 +6,4 @@ on:
 jobs:
   validate:
     uses: ./.github/workflows/eoa.yml
+    secrets: inherit
