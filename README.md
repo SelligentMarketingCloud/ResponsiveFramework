@@ -1,13 +1,16 @@
-# Introduction 
-The responsive framework is a collection of guidelines developed by Marigold Selligent to [design responsive HTML emails](https://selligentmarketingcloud.github.io/ResponsiveFramework/).
+# Explore the [Responsive Framework](https://selligentmarketingcloud.github.io/ResponsiveFramework/)
+The Responsive Framework is a set of HTML guidelines that was designed through years of industry experience. It captures practices that help design responsive cross-client emails with minimal effort.
 
-The guidelines come in the form of an example HTML template with multiple column layouts.
+This page shows how different clients render [the source html of the framework](https://github.com/SelligentMarketingCloud/ResponsiveFramework/blob/main/source/v5.0.html). Note that the goal of the Responsive Framework is not to be W3C compliant, but to be email client safe.
 
-# Validation
-A pipeline is planned to validate the template against actual mail client renderings.
+# Sample layout
+
+![GMail](https://github.com/SelligentMarketingCloud/ResponsiveFramework/raw/refs/heads/main/output/gmailcom-lm_chrcurrent_win10.png)
 
 # Contributions
-You are free to create PullRequests against this repository.
+* [Fork](https://github.com/SelligentMarketingCloud/ResponsiveFramework/fork) the repository
+* Modify [latest.html](https://github.com/SelligentMarketingCloud/ResponsiveFramework/blob/main/source/latest.html)
+* Create a PR and wait for us to approve the screenshot validation
 
 # Versions
 | Link                          | Description                 |
