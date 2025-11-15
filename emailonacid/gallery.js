@@ -8,7 +8,7 @@ function getClasses(prefix, groups, groupName) {
         return [];
     }
 
-    return [`${prefix}-${group.toLocaleLowerCase().replace(/\s+/g, '-')}`];
+    return [`${prefix}-${group.toLocaleLowerCase().replace(/(\s|\.)+/g, '-')}`];
 }
 
 function getFigureClasses(client, os, category) {
@@ -73,7 +73,11 @@ const clientsHtml = sortedClients.map(({ id, client, os, category, browser }) =>
 
     const title = [os, category, browser]
         .filter(x => x)
-        .join(' / ');
+        .join('');
+
+    const htmlTitle = '<span>' + [os, category, browser]
+        .filter(x => x)
+        .join('</span><span>') + '</span>';
 
     const transformedFigureHtml = figureHtml
         .replace(/(href|src)="[^"]*"/sg, `$1="${img}"`)
@@ -83,7 +87,7 @@ const clientsHtml = sortedClients.map(({ id, client, os, category, browser }) =>
             `<$<element>>${client}</$<element>>`)
         .replace(
             /(<(?<element>figcaption[^>]*)>)(.*?)(<\/(\k<element>)>)/gs,
-            `<$<element>>${title}</$<element>>`);
+            `<$<element>>${htmlTitle}</$<element>>`);
 
     const figureClasses = getFigureClasses(client, os, category).join(' ');
 
