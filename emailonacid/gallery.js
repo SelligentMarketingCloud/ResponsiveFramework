@@ -71,6 +71,20 @@ const clientsHtml = sortedClients.map(({ id, client, os, category, browser }) =>
 
     const img = `${id}.png`;
 
+    const figureClasses = getFigureClasses(client, os, category).join(' ');
+
+    let iconClass = ''
+    if (figureClasses.includes('client-yahoo-com')) {
+        iconClass = 'fa-yahoo';
+    } else if (figureClasses.includes('client-gmail')) {
+        iconClass = 'fa-google';
+    } else if (figureClasses.includes('client-outlook')) {
+        iconClass = 'fa-windows';
+    } else if (figureClasses.includes('client-apple-mail') ||
+        figureClasses.includes('client-iphone')) {
+        iconClass = 'fa-apple';
+    }
+
     const title = [os, category, browser]
         .filter(x => x)
         .join('');
@@ -83,13 +97,11 @@ const clientsHtml = sortedClients.map(({ id, client, os, category, browser }) =>
         .replace(/(href|src)="[^"]*"/sg, `$1="${img}"`)
         .replace(/alt="[^"]*"/sg, `alt="${title}"`)
         .replace(
-            /(<(?<element>h2[^>]*)>)(.*?)(<\/(\k<element>)>)/gs,
-            `<$<element>>${client}</$<element>>`)
+            /<h2[^>]*>(.*?)<\/h2>/gs,
+            `<h2 class="icon brands ${iconClass}">${client}</h2>`)
         .replace(
-            /(<(?<element>figcaption[^>]*)>)(.*?)(<\/(\k<element>)>)/gs,
-            `<$<element>>${htmlTitle}</$<element>>`);
-
-    const figureClasses = getFigureClasses(client, os, category).join(' ');
+            /<figcaption[^>]*>(.*?)<\/figcaption>/gs,
+            `<figcaption>${htmlTitle}</figcaption>`);
 
     const figureAttrUpdated = figureAttr.replace(
         /\s*class="([^"]*)"/,
