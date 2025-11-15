@@ -1,13 +1,48 @@
 const { compare } = require("odiff-bin");
 const fs = require('fs');
+const sharp = require('sharp');
+
+async function getCroppedImages(clientId) {
+    const baseImage = sharp(`../diff/base/${clientId}.png`);
+    const compareImage = sharp(`../diff/compare/${clientId}.png`);
+    const { width: baseWidth, height: baseHeight } = await baseImage.metadata();
+    const { width: compareWidth, height: compareHeight } = await compareImage.metadata();
+    const width = Math.min(baseWidth, compareWidth);
+    const height = Math.min(baseHeight, compareHeight);
+
+    let baseCrop = '';
+    if (baseWidth > width || baseHeight > height) {
+        const left = Math.floor((baseWidth - width) / 2);
+        baseImage
+            .extract({ left, top: 0, width, height })
+            .toFile(`../diff/base/${clientId}_cropped.png`);
+        baseCrop = '_cropped';
+    }
+
+    let compareCrop = '';
+    if (compareWidth > width || compareHeight > height) {
+        const left = Math.floor((compareWidth - width) / 2);
+        compareImage
+            .extract({ left, top: 0, width, height })
+            .toFile(`../diff/compare/${clientId}_cropped.png`);
+        compareCrop = '_cropped';
+    }
+    
+    return {
+        baseImage: `../diff/base/${clientId}${baseCrop}.png`,
+        compareImage: `../diff/compare/${clientId}${compareCrop}.png`
+    };
+}
 
 async function createDiff(threshold, clientId, clientsMap) {
 
     const failureThreshold = threshold;
 
+    const { baseImage, compareImage } = await getCroppedImages(clientId);
+
     const { reason, diffPercentage } = await compare(
-        `../diff/base/${clientId}.png`,
-        `../diff/compare/${clientId}.png`,
+        baseImage,
+        compareImage,
         `../diff/diff/${clientId}.png`, {
             failureThreshold,
             noFailOnFsErrors: true,

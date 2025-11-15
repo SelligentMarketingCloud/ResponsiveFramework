@@ -2,7 +2,8 @@
   "devDependencies": {
     "@researchgate/emailonacid-snapshot": "^4.0.4",
     "cypress-image-diff-html-report": "^2.2.0",
-    "odiff-bin": "^4.1.1"
+    "odiff-bin": "^4.1.1",
+    "sharp": "^0.34.5"
   },
   "scripts": {
     "gallery": "node gallery.js",

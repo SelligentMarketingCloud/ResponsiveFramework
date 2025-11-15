@@ -1,17 +1,10 @@
 name: Validate Responsive Framework
 
+permissions:
+  pull-requests: write
+
 on:
   workflow_call:
-    secrets:
-      EOA_ACCOUNT_PASSWORD:
-        required: true
-    inputs:
-      EOA_API_KEY:
-        required: true
-        type: string
-      mode:
-        required: false
-        type: string
 
 jobs:
   validate:
@@ -45,7 +38,7 @@ jobs:
         working-directory: ./emailonacid
         env:
           EOA_ACCOUNT_PASSWORD: ${{ secrets.EOA_ACCOUNT_PASSWORD }}
-          EOA_API_KEY: ${{ inputs.EOA_API_KEY }}
+          EOA_API_KEY: ${{ vars.EOA_API_KEY }}
       - name: Copy compare screenshots for caching
         if: steps.cache-diff-restore.outputs.cache-hit != 'true'
         run: mkdir -p diff/compare && cp -r output/*.png diff/compare
