@@ -1,7 +1,7 @@
-# Explore the [Responsive Framework](https://selligentmarketingcloud.github.io/ResponsiveFramework/)
+# Responsive Framework for Email
 The Responsive Framework is a set of HTML guidelines that was designed through years of industry experience. It captures practices that help design responsive cross-client emails with minimal effort.
 
-This page shows how different clients render [the source html of the framework](https://github.com/SelligentMarketingCloud/ResponsiveFramework/blob/main/source/v5.0.html). Note that the goal of the Responsive Framework is not to be W3C compliant, but to be email client safe.
+[This page](https://selligentmarketingcloud.github.io/ResponsiveFramework/) shows how different clients render [the source html of the framework](https://github.com/SelligentMarketingCloud/ResponsiveFramework/blob/main/source/v5.0.html). Note that the goal of the Responsive Framework is not to be W3C compliant, but to be email client safe.
 
 # Sample layout
 
