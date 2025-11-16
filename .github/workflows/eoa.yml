@@ -10,7 +10,9 @@ jobs:
   validate:
     name: Capture and compare screenshots
     runs-on: ubuntu-latest
-    environment: eoa
+    environment:
+      name: eoa
+      url: https://www.artifact.ci/artifact/view/${{ github.repository }}/run/${{ github.run_id }}.${{ github.run_attempt }}/diff
     steps:
       - uses: actions/checkout@v5
         with:
