@@ -37,6 +37,7 @@ jobs:
         run: npm ci
         working-directory: ./emailonacid
       - name: Capture screenshots
+        id: screenshots
         if: steps.cache-diff-restore.outputs.cache-hit != 'true'
         run: npm run eoa
         working-directory: ./emailonacid
@@ -52,7 +53,6 @@ jobs:
         run: mkdir -p ../diff/diff && npm run diff
         working-directory: ./emailonacid
       - name: Generate report screenshots
-        id: create-report
         if: steps.cache-diff-restore.outputs.cache-hit != 'true' && (success() || steps.create-screenshots.conclusion == 'failure')
         run: npm run report-ci
         working-directory: ./emailonacid
@@ -64,25 +64,26 @@ jobs:
           path: diff
           key: ${{ steps.cache-diff-restore.outputs.cache-primary-key }}
       - name: Fail if there are visual differences
+        id: check-diff
         run: exit $(jq -r .totalFailed diff/result.json)
       - name: Generate report screenshots
-        if: success() && github.event_name == 'pull_request'
+        # Generate gallery if no differences were found
         run: npm run gallery
         working-directory: ./emailonacid
       - name: Publish screenshot page as artifact
-        if: success() && github.event_name == 'pull_request'
         uses: actions/upload-artifact@v4
         with:
           name: eoa
           path: output
       - name: Publish diff report as artifact
-        if: failure() || steps.create-report.conclusion == 'success'
+        id: diff-report
+        if: failure() && steps.check-diff.conclusion == 'failure'
         uses: actions/upload-artifact@v4
         with:
           name: eoa
           path: diff
       - name: Add PR comment
-        if: failure() && github.event_name == 'pull_request'
+        if: failure() && steps.check-diff.conclusion == 'failure'
         uses: actions/github-script@v8
         with:
           script: |
