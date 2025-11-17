@@ -65,7 +65,9 @@ jobs:
           key: ${{ steps.cache-diff-restore.outputs.cache-primary-key }}
       - name: Fail if there are visual differences
         id: check-diff
-        run: exit $(jq -r .totalFailed diff/result.json)
+        run: |
+          cat diff/result.json
+          exit $(jq -r .totalFailed diff/result.json)
       - name: Generate report screenshots
         # Generate gallery if no differences were found
         run: npm run gallery
