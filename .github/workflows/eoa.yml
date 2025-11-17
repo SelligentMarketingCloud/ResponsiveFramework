@@ -12,7 +12,7 @@ jobs:
     runs-on: ubuntu-latest
     environment:
       name: eoa
-      url: '{{ steps.variables.outputs.EOA_URL }}'
+      url: ${{ steps.variables.outputs.EOA_URL }}
     steps:
       - id: variables
         run: echo "EOA_URL=https://www.artifact.ci/artifact/view/${{ github.repository }}/run/${{ github.run_id }}.${{ github.run_attempt }}/eoa" >> "$GITHUB_OUTPUT"
@@ -91,6 +91,6 @@ jobs:
               owner: context.repo.owner,
               repo: context.repo.repo,
               body: `### :warning: Your changes introduced visual differences.
-              1. First [login here]({{ steps.variables.outputs.EOA_URL }})
-              2. Then [view the differences here]({{ steps.variables.outputs.EOA_URL }}/index.html)`
+              1. First [login here](${{ steps.variables.outputs.EOA_URL }})
+              2. Then [view the differences here](${{ steps.variables.outputs.EOA_URL }}/index.html)`
             })
