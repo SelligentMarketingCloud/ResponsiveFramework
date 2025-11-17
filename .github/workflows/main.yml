@@ -73,7 +73,7 @@ jobs:
    
   deploy:
     name: Deploy GitHub pages
-    if: needs.version.outputs.release-version
+    if: needs.version.outputs.release-prerelease == 'false'
     needs: [ validate, version ]
     runs-on: ubuntu-latest
 
@@ -101,11 +101,9 @@ jobs:
         run: npm run gallery
         working-directory: ./emailonacid
       - name: 📦 Publish html gallery for GitHub Pages
-        if: env.RELEASE_PRERELEASE == 'false'
         uses: actions/upload-pages-artifact@v4
         with: 
           path: output
       - name: 🚀 Deploy html gallery to GitHub Pages
-        if: env.RELEASE_PRERELEASE == 'false'
         id: deployment
         uses: actions/deploy-pages@v4
