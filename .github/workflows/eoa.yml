@@ -71,6 +71,7 @@ jobs:
         working-directory: ./emailonacid
       - name: Publish screenshot page as artifact
         if: success() && github.event_name == 'pull_request'
+        uses: actions/upload-artifact@v4
         with:
           name: eoa
           path: output
