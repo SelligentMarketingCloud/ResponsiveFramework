@@ -18,14 +18,14 @@ jobs:
       release-prerelease: ${{ steps.version.outputs.RELEASE_PRERELEASE }}
       release-args: ${{ steps.version.outputs.RELEASE_ARGS }}
     steps:
+      - name: 📄 Checkout
+        uses: actions/checkout@v5
       - name: 🔖 Set VERSION variable from tag
         id: version
         if: startsWith(github.ref, 'refs/tags/')
         run: |
           # Extract major and minor
-          MAJOR=$(echo ${{ github.ref_name }} | sed -E 's/.*v([[:digit:]]+)\.[[:digit:]]+.*/\1/')
-          MINOR=$(echo ${{ github.ref_name }} | sed -E 's/.*v[[:digit:]]+\.([[:digit:]]+).*/\1/')
-          echo "RELEASE_VERSION=$MAJOR.$MINOR" >> $GITHUB_OUTPUT
+          echo "RELEASE_VERSION=${{ github.ref_name }}" >> $GITHUB_OUTPUT
   
           # Assume prerelease if existing release is marked as such, or tag contains hyphen
           # This allows us to create prerelease by either pushing prerelease tags or
@@ -56,8 +56,6 @@ jobs:
     steps:
       - name: 📄 Checkout
         uses: actions/checkout@v5
-        with:
-          lfs: true
       - name: 🚀 Create release
         if: needs.version.outputs.release-existing != github.ref_name
         run: |
