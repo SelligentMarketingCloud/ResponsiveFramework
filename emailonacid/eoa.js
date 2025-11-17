@@ -11,7 +11,7 @@ async function run() {
     const createEmail = configureCreateEmail({
         clients,
         poll: {
-            timeout: 300
+            timeout: 5 * 60 * 1000
         }
     });
 
