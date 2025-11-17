@@ -66,7 +66,7 @@ jobs:
           GITHUB_TOKEN: ${{ github.TOKEN }}
       - name: 🚀 Upload release files
         run: |
-          gh release upload ${{ github.ref_name }} source/latest.html#responsive-framework.html
+          gh release upload ${{ github.ref_name }} 'source/latest.html#Responsive Framework'
         env:
           GITHUB_TOKEN: ${{ github.TOKEN }}
    
