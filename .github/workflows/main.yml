@@ -4,6 +4,9 @@ on:
   push:
     branches:
       - main
+  create:
+    tags:
+      - '*'
 
 jobs:
   validate:
@@ -26,21 +29,58 @@ jobs:
 
     # Specify runner + deployment step
     steps:
-      - uses: actions/checkout@v5
+      - name: 📄 Checkout
+        uses: actions/checkout@v5
         with:
           lfs: true
-      - name: Setup Node.js
+      - name: 🔨 Setup Node.js
         uses: actions/setup-node@v6
         with:
           node-version: '18'
-      - name: Create html gallery
+      - name: 🔨 Create html gallery
         run: npm run gallery
         working-directory: ./emailonacid
-      - name: Publish html gallery for GitHub Pages
+      - name: 📦 Publish html gallery for GitHub Pages
         uses: actions/upload-pages-artifact@v4
         with: 
           path: output
-      - name: Deploy html gallery to GitHub Pages
+      - name: 🚀 Deploy html gallery to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4
-
+      - name: 🔖 Set VERSION variable from tag
+        id: version
+        if: startsWith(github.ref, 'refs/tags/')
+        run: |
+          # Extract major and minor
+          MAJOR=$(echo ${{ github.ref_name }} | sed -E 's/.*v([[:digit:]]+)\.[[:digit:]]+.*/\1/')
+          MINOR=$(echo ${{ github.ref_name }} | sed -E 's/.*v[[:digit:]]+\.([[:digit:]]+).*/\1/')
+          echo "VERSION=$MAJOR.$MINOR" >> $GITHUB_ENV
+  
+          # Assume prerelease if existing release is marked as such, or tag contains hyphen
+          # This allows us to create prerelease by either pushing prerelease tags or
+          # creating an actual prerelease in GitHub
+          IS_PRERELEASE=$(gh release view ${{ github.ref_name }} --json isPrerelease --jq '.isPrerelease' || echo '')
+          if [[ $IS_PRERELEASE == 'true' || '${{ github.ref_name }}' == *'-'* ]]; then
+            echo "RELEASE_ARGS=-p" >> $GITHUB_ENV
+            echo "RELEASE_SUFFIX=-dev" >> $GITHUB_ENV
+          else
+            echo "RELEASE_ARGS=" >> $GITHUB_ENV
+            echo "RELEASE_SUFFIX=" >> $GITHUB_ENV
+          fi
+  
+          echo "EXISTING_RELEASE=$(gh release view ${{ github.ref_name }} --json name --jq '.name' || echo '')" >> $GITHUB_ENV
+        env:
+          GITHUB_TOKEN: ${{ github.TOKEN }}
+      - name: 🚀 Create release
+        if: ( steps.version.outcome == 'success' ) && ( env.EXISTING_RELEASE != github.ref_name )
+        run: |
+          gh release create v$VERSION --generate-notes $RELEASE_ARGS
+        env:
+          GITHUB_TOKEN: ${{ github.TOKEN }}
+      - name: 🚀 Upload release files
+        if: steps.version.outcome == 'success'
+        run:
+          gh release upload ${{ github.ref_name }} source/latest.html#index.html
+          gh release upload ${{ github.ref_name }} output/*.png
+        env:
+          GITHUB_TOKEN: ${{ github.TOKEN }}
