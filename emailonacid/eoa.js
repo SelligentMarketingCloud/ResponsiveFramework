@@ -37,4 +37,7 @@ async function run() {
     await email.clean();
 }
 
-run();
+(async () => {
+    await run();
+})();
+
