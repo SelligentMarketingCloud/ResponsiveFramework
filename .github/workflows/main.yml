@@ -51,11 +51,10 @@ jobs:
         id: version
         if: startsWith(github.ref, 'refs/tags/')
         run: |
-          # Extract major and minor and use run number for versioning unique vsix
+          # Extract major and minor
           MAJOR=$(echo ${{ github.ref_name }} | sed -E 's/.*v([[:digit:]]+)\.[[:digit:]]+.*/\1/')
           MINOR=$(echo ${{ github.ref_name }} | sed -E 's/.*v[[:digit:]]+\.([[:digit:]]+).*/\1/')
-          PATCH=${{ github.run_number }}
-          echo "VERSION=$MAJOR.$MINOR.$PATCH" >> $GITHUB_ENV
+          echo "VERSION=$MAJOR.$MINOR" >> $GITHUB_ENV
   
           # Assume prerelease if existing release is marked as such, or tag contains hyphen
           # This allows us to create prerelease by either pushing prerelease tags or
@@ -80,6 +79,8 @@ jobs:
           GITHUB_TOKEN: ${{ github.TOKEN }}
       - name: 🚀 Upload release files
         if: steps.version.outcome == 'success'
-        run: gh release upload ${{ github.ref_name }} source/latest.html output
+        run:
+          gh release upload ${{ github.ref_name }} source/latest.html#index.html
+          gh release upload ${{ github.ref_name }} output/*.png
         env:
           GITHUB_TOKEN: ${{ github.TOKEN }}
