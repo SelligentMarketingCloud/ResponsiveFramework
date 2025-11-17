@@ -65,7 +65,7 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ github.TOKEN }}
       - name: 🚀 Upload release files
-        run:
+        run: |
           gh release upload ${{ github.ref_name }} source/latest.html#index.html
           gh release upload ${{ github.ref_name }} output/*.png
         env:
