@@ -1,5 +1,6 @@
 const { compare } = require("odiff-bin");
 const fs = require('fs');
+const path = require('path');
 const sharp = require('sharp');
 
 async function getCroppedImages(clientId) {
@@ -52,7 +53,7 @@ async function createDiff(threshold, clientId, clientsMap) {
 
     const { baseImage, compareImage } = await getCroppedImages(clientId);
 
-    const { reason, diffPercentage } = await compare(
+    const { reason, diffPercentage, match: pixelMatch } = await compare(
         baseImage,
         compareImage,
         `../diff/diff/${clientId}.png`, {
@@ -62,9 +63,9 @@ async function createDiff(threshold, clientId, clientsMap) {
 
     const percentage = reason == 'pixel-diff'
         ? diffPercentage / 100
-        : null;
+        : 1;
 
-    const match = percentage < failureThreshold;
+    const match = pixelMatch || percentage < failureThreshold;
 
     const { client, os, category, browser } = clientsMap[clientId];
 
@@ -82,6 +83,14 @@ async function createDiff(threshold, clientId, clientsMap) {
         client,
         name,
     };
+}
+
+function getImage(imagePath) {
+    const normalizedPath = path.join('../diff/', imagePath);
+    if (fs.existsSync(normalizedPath)) {
+        return imagePath;
+    }
+    return './base/image_not_available.png';
 }
 
 async function run() {
@@ -131,9 +140,9 @@ async function run() {
                 failureThreshold,
                 specPath: `./base/${clientId}.png`,
                 specFilename: `${clientId}.png`,
-                baselinePath: `./base/${clientId}.png`,
-                diffPath: match ? '' : `./diff/${clientId}.png`,
-                comparisonPath: `./compare/${clientId}.png`,
+                baselinePath: getImage(`./base/${clientId}.png`),
+                diffPath: match ? '' : getImage(`./diff/${clientId}.png`),
+                comparisonPath: getImage(`./compare/${clientId}.png`),
             })),
         })),
     }
