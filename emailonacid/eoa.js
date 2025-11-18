@@ -9,7 +9,10 @@ async function run() {
         .filter(line => line && !line.startsWith('#'));
 
     const createEmail = configureCreateEmail({
-        clients
+        clients,
+        poll: {
+            timeout: 5 * 60 * 1000
+        }
     });
 
     const emailContent = fs.readFileSync('../source/latest.html');
@@ -34,4 +37,7 @@ async function run() {
     await email.clean();
 }
 
-run();
+(async () => {
+    await run();
+})();
+
