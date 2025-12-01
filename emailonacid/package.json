@@ -7,6 +7,7 @@
   },
   "scripts": {
     "gallery": "node gallery.js",
+    "test": "jest",
     "eoa": "node eoa.js",
     "copy-base": "mkdir -p ../diff/base && cd .. && git ls-tree -r --name-only HEAD output/ | grep '\\.png$' | while read file; do git show HEAD:\"$file\" | git lfs smudge > \"diff/base/$(basename \"$file\")\"; done",
     "copy-compare": "mkdir -p ../diff/compare && cp -R ../output/*.png ../diff/compare",

@@ -1,43 +1,15 @@
-const { configureCreateEmail } = require('@researchgate/emailonacid-snapshot');
-const fs = require('fs');
-
-async function run() {
-
-    const clients = fs.readFileSync('clients.txt', 'utf-8')
-        .split('\n')
-        .map(line => line.trim())
-        .filter(line => line && !line.startsWith('#'));
-
-    const createEmail = configureCreateEmail({
-        clients,
-        poll: {
-            timeout: 5 * 60 * 1000
-        }
-    });
-
-    const emailContent = fs.readFileSync('../source/latest.html');
-
-    const email = await createEmail(emailContent);
-
-    const actualClients = email.clients;
-
-    const missingClients = clients.filter(client => !actualClients.includes(client));
-
-    if (missingClients.length > 0) {
-        console.warn(`Unable to create screenshots for: ${missingClients.join(', ')}`);
-    }
-
-    for (const client of actualClients) {
-        const screenshot = await email.screenshot(client);
-
-        fs.writeFileSync(`../output/${client}.png`, screenshot);
-    }
-
-    // assert screenshot at this point
-    await email.clean();
-}
+const { EoaClient } = require('./eoa-client');
+const config = require('./eoa-config');
 
 (async () => {
-    await run();
-})();
+    
+    const emailClient = new EoaClient({
+        clientsPath: 'clients.txt'
+    });
 
+    const content = config.getContent();
+
+    const { success, skipped, failed } = await emailClient.collectScreenshots(content);
+
+    process.exit(failed.length);
+})();
