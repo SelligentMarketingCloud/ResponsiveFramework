@@ -90,7 +90,7 @@ function getImage(imagePath) {
     if (fs.existsSync(normalizedPath)) {
         return imagePath;
     }
-    return './base/image_not_available.png';
+    return './base/no_image_available.png';
 }
 
 async function run() {
