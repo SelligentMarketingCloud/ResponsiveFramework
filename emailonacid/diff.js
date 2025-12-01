@@ -1,19 +1,32 @@
 const { compare } = require("odiff-bin");
 const fs = require('fs');
+const path = require('path');
 const sharp = require('sharp');
 
 async function getCroppedImages(clientId) {
-    const baseImage = sharp(`../diff/base/${clientId}.png`);
-    const compareImage = sharp(`../diff/compare/${clientId}.png`);
-    const { width: baseWidth, height: baseHeight } = await baseImage.metadata();
-    const { width: compareWidth, height: compareHeight } = await compareImage.metadata();
+
+    const baseImage = `../diff/base/${clientId}.png`;
+    const compareImage = `../diff/compare/${clientId}.png`;
+
+    if (!fs.existsSync(baseImage) ||
+        !fs.existsSync(compareImage)) {
+        return {
+            baseImage,
+            compareImage
+        };
+    }
+
+    const baseSharp = sharp(baseImage);
+    const compareSharp = sharp(compareImage);
+    const { width: baseWidth, height: baseHeight } = await baseSharp.metadata();
+    const { width: compareWidth, height: compareHeight } = await compareSharp.metadata();
     const width = Math.min(baseWidth, compareWidth);
     const height = Math.min(baseHeight, compareHeight);
 
     let baseCrop = '';
     if (baseWidth > width || baseHeight > height) {
         const left = Math.floor((baseWidth - width) / 2);
-        baseImage
+        await baseSharp
             .extract({ left, top: 0, width, height })
             .toFile(`../diff/base/${clientId}_cropped.png`);
         baseCrop = '_cropped';
@@ -22,7 +35,7 @@ async function getCroppedImages(clientId) {
     let compareCrop = '';
     if (compareWidth > width || compareHeight > height) {
         const left = Math.floor((compareWidth - width) / 2);
-        compareImage
+        await compareSharp
             .extract({ left, top: 0, width, height })
             .toFile(`../diff/compare/${clientId}_cropped.png`);
         compareCrop = '_cropped';
@@ -40,7 +53,9 @@ async function createDiff(threshold, clientId, clientsMap) {
 
     const { baseImage, compareImage } = await getCroppedImages(clientId);
 
-    const { reason, diffPercentage } = await compare(
+    console.log(`[diff] Comparing images for ${clientId}: ${baseImage} vs ${compareImage}`);
+
+    const { reason, diffPercentage, match: pixelMatch, file } = await compare(
         baseImage,
         compareImage,
         `../diff/diff/${clientId}.png`, {
@@ -50,9 +65,9 @@ async function createDiff(threshold, clientId, clientsMap) {
 
     const percentage = reason == 'pixel-diff'
         ? diffPercentage / 100
-        : null;
+        : 1;
 
-    const match = percentage < failureThreshold;
+    const match = pixelMatch || percentage < failureThreshold;
 
     const { client, os, category, browser } = clientsMap[clientId];
 
@@ -60,7 +75,7 @@ async function createDiff(threshold, clientId, clientsMap) {
         .filter(x => x)
         .join(' / ');
 
-    console[match ? 'log' : 'error'](`[diff] ${clientId} match: ${match} ${reason ? '- ' + reason : ''}`);
+    console[match ? 'log' : 'error'](`[diff] ${clientId} match: ${match} ${reason ? '- ' + reason : ''} ${file ? ' (' + file + ')' : ''}`);
 
     return {
         clientId,
@@ -70,6 +85,14 @@ async function createDiff(threshold, clientId, clientsMap) {
         client,
         name,
     };
+}
+
+function getImage(imagePath) {
+    const normalizedPath = path.join('../diff/', imagePath);
+    if (fs.existsSync(normalizedPath)) {
+        return imagePath;
+    }
+    return './base/no_image_available.png';
 }
 
 async function run() {
@@ -119,9 +142,9 @@ async function run() {
                 failureThreshold,
                 specPath: `./base/${clientId}.png`,
                 specFilename: `${clientId}.png`,
-                baselinePath: `./base/${clientId}.png`,
-                diffPath: match ? '' : `./diff/${clientId}.png`,
-                comparisonPath: `./compare/${clientId}.png`,
+                baselinePath: getImage(`./base/${clientId}.png`),
+                diffPath: match ? '' : getImage(`./diff/${clientId}.png`),
+                comparisonPath: getImage(`./compare/${clientId}.png`),
             })),
         })),
     }

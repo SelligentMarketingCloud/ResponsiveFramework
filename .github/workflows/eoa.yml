@@ -12,8 +12,10 @@ jobs:
     runs-on: ubuntu-latest
     environment:
       name: eoa
-      url: https://www.artifact.ci/artifact/view/${{ github.repository }}/run/${{ github.run_id }}.${{ github.run_attempt }}/diff
+      url: ${{ (steps.screenshot-report.conclusion == 'success' || steps.diff-report.conclusion == 'success') && steps.variables.outputs.EOA_URL || '' }}
     steps:
+      - id: variables
+        run: echo "EOA_URL=https://www.artifact.ci/artifact/view/${{ github.repository }}/run/${{ github.run_id }}.${{ github.run_attempt }}/eoa" >> "$GITHUB_OUTPUT"
       - uses: actions/checkout@v5
         with:
           lfs: true
@@ -35,6 +37,7 @@ jobs:
         run: npm ci
         working-directory: ./emailonacid
       - name: Capture screenshots
+        id: screenshots
         if: steps.cache-diff-restore.outputs.cache-hit != 'true'
         run: npm run eoa
         working-directory: ./emailonacid
@@ -50,7 +53,6 @@ jobs:
         run: mkdir -p ../diff/diff && npm run diff
         working-directory: ./emailonacid
       - name: Generate report screenshots
-        id: create-report
         if: steps.cache-diff-restore.outputs.cache-hit != 'true' && (success() || steps.create-screenshots.conclusion == 'failure')
         run: npm run report-ci
         working-directory: ./emailonacid
@@ -61,19 +63,31 @@ jobs:
         with:
           path: diff
           key: ${{ steps.cache-diff-restore.outputs.cache-primary-key }}
-      - name: Publish diff report as artifact
-        if: success() || steps.create-report.conclusion == 'success'
+      - name: Fail if there are visual differences
+        id: check-diff
+        run: |
+          cat diff/result.json
+          exit $(jq -r .totalFailed diff/result.json)
+      - name: Generate report screenshots
+        # Generate gallery if no differences were found
+        run: npm run gallery
+        working-directory: ./emailonacid
+      - name: Publish screenshot page as artifact
+        id: screenshot-report
         uses: actions/upload-artifact@v4
         with:
-          name: diff
+          name: eoa
+          path: output
+      - name: Publish diff report as artifact
+        id: diff-report
+        if: failure() && steps.check-diff.conclusion == 'failure'
+        uses: actions/upload-artifact@v4
+        with:
+          name: eoa
           path: diff
-      - name: Fail if there are visual differences
-        run: exit $(jq -r .totalFailed diff/result.json)
       - name: Add PR comment
-        if: failure() && github.event_name == 'pull_request'
+        if: failure() && steps.check-diff.conclusion == 'failure'
         uses: actions/github-script@v8
-        env:
-          INPUT_RUNATTEMPT: ${{ github.run_attempt }}
         with:
           script: |
             github.rest.issues.createComment({
@@ -81,6 +95,6 @@ jobs:
               owner: context.repo.owner,
               repo: context.repo.repo,
               body: `### :warning: Your changes introduced visual differences.
-              1. First [login here](https://www.artifact.ci/artifact/view/${context.repo.owner}/${context.repo.repo}/run/${context.runId}.${core.getInput('runattempt')}/diff)
-              2. Then [view the differences here](https://www.artifact.ci/artifact/view/${context.repo.owner}/${context.repo.repo}/run/${context.runId}.${core.getInput('runattempt')}/diff/index.html)`
+              1. First [login here](${{ steps.variables.outputs.EOA_URL }})
+              2. Then [view the differences here](${{ steps.variables.outputs.EOA_URL }}/index.html)`
             })
