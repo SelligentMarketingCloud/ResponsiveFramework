@@ -26,7 +26,7 @@ async function getCroppedImages(clientId) {
     let baseCrop = '';
     if (baseWidth > width || baseHeight > height) {
         const left = Math.floor((baseWidth - width) / 2);
-        baseSharp
+        await baseSharp
             .extract({ left, top: 0, width, height })
             .toFile(`../diff/base/${clientId}_cropped.png`);
         baseCrop = '_cropped';
@@ -35,7 +35,7 @@ async function getCroppedImages(clientId) {
     let compareCrop = '';
     if (compareWidth > width || compareHeight > height) {
         const left = Math.floor((compareWidth - width) / 2);
-        compareSharp
+        await compareSharp
             .extract({ left, top: 0, width, height })
             .toFile(`../diff/compare/${clientId}_cropped.png`);
         compareCrop = '_cropped';
