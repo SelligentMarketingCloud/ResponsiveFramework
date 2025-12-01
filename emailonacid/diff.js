@@ -53,7 +53,9 @@ async function createDiff(threshold, clientId, clientsMap) {
 
     const { baseImage, compareImage } = await getCroppedImages(clientId);
 
-    const { reason, diffPercentage, match: pixelMatch } = await compare(
+    console.log(`[diff] Comparing images for ${clientId}: ${baseImage} vs ${compareImage}`);
+
+    const { reason, diffPercentage, match: pixelMatch, file } = await compare(
         baseImage,
         compareImage,
         `../diff/diff/${clientId}.png`, {
@@ -73,7 +75,7 @@ async function createDiff(threshold, clientId, clientsMap) {
         .filter(x => x)
         .join(' / ');
 
-    console[match ? 'log' : 'error'](`[diff] ${clientId} match: ${match} ${reason ? '- ' + reason : ''}`);
+    console[match ? 'log' : 'error'](`[diff] ${clientId} match: ${match} ${reason ? '- ' + reason : ''} ${file ? ' (' + file + ')' : ''}`);
 
     return {
         clientId,
