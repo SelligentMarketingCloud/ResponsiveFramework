@@ -11,8 +11,8 @@ outlookcom-lm_edgecurrent_win10
 outlookcom-lm_ffcurrent_win10
 outlookcom-lm_chrcurrent_win10
 
-yahoocom-lm_edgecurrent_win10
-yahoocom-lm_ffcurrent_win10
+# yahoocom-lm_edgecurrent_win10
+# yahoocom-lm_ffcurrent_win10
 yahoocom-lm_chrcurrent_win10
 
 # Desktop app
