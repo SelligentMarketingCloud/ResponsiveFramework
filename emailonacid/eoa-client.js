@@ -24,7 +24,7 @@ class EoaClient {
             accountPassword: this.config.accountPassword,
             defaultClients: requestClients,
             poll: {
-                timeout: 120000,
+                timeout: 180000,
             }
         })
 
