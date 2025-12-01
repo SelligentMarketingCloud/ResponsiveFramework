@@ -11,8 +11,8 @@ outlookcom-lm_edgecurrent_win10
 outlookcom-lm_ffcurrent_win10
 outlookcom-lm_chrcurrent_win10
 
-# yahoocom-lm_edgecurrent_win10
-# yahoocom-lm_ffcurrent_win10
+yahoocom-lm_edgecurrent_win10
+yahoocom-lm_ffcurrent_win10
 yahoocom-lm_chrcurrent_win10
 
 # Desktop app
@@ -33,6 +33,3 @@ outlook2021_win11_dm_dt
 
 # Mobile
 iphone16promax_18_dm
-
-# Force failure
-# aolcom-lm_chrcurrent_win10
