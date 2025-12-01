@@ -49,23 +49,27 @@ class EoaClient {
                 .filter(ca =>
                     !ca.success && ca.retries < retries);
 
-            const email = await configureCreateEmail(
-                withDefaultPlugins({
-                    clients: clientsToDo.map(ca => ca.client),
-                    credentials: {
-                        apiKey: this.config.apiKey,
-                        accountPassword: this.config.accountPassword
-                    },
-                    debug: true,
-                    plugins: [
-                        { 
-                            name: 'limits',
-                            convert: (context) => {
-                                context.stream.setMaxListeners(requestClients.length * 2);
-                            },
-                        }
-                    ]
-                }))(emailContent);
+            const defaultConfig = withDefaultPlugins({
+                clients: clientsToDo.map(ca => ca.client),
+                credentials: {
+                    apiKey: this.config.apiKey,
+                    accountPassword: this.config.accountPassword
+                },
+                debug: true,
+            });
+
+            const email = await configureCreateEmail({
+                ...defaultConfig,
+                plugins: [
+                    ...defaultConfig.plugins,
+                    {
+                        name: 'limits',
+                        convert: (context) => {
+                            context.stream.setMaxListeners(clientsToDo.length * 2);
+                        },
+                    }
+                ]
+            })(emailContent);
 
             const results = await Promise.all(
                 clientsToDo.map(async ({ client, retries, success }) => {
