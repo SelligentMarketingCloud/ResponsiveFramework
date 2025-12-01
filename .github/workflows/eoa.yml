@@ -36,6 +36,8 @@ jobs:
         if: steps.cache-diff-restore.outputs.cache-hit != 'true'
         run: npm ci
         working-directory: ./emailonacid
+      - name: List files in the repository
+        run: find ${{ github.workspace }} -ls
       - name: Capture screenshots
         id: screenshots
         if: steps.cache-diff-restore.outputs.cache-hit != 'true'
@@ -44,18 +46,26 @@ jobs:
         env:
           EOA_ACCOUNT_PASSWORD: ${{ secrets.EOA_ACCOUNT_PASSWORD }}
           EOA_API_KEY: ${{ vars.EOA_API_KEY }}
+      - name: List files in the repository
+        run: find ${{ github.workspace }} -ls
       - name: Copy compare screenshots for caching
         if: steps.cache-diff-restore.outputs.cache-hit != 'true'
         run: mkdir -p diff/compare && cp -r output/*.png diff/compare
+      - name: List files in the repository
+        run: find ${{ github.workspace }} -ls
       - name: Compare screenshots
         if: steps.cache-diff-restore.outputs.cache-hit != 'true'
         id: create-screenshots
         run: mkdir -p ../diff/diff && npm run diff
         working-directory: ./emailonacid
+      - name: List files in the repository
+        run: find ${{ github.workspace }} -ls
       - name: Generate report screenshots
         if: steps.cache-diff-restore.outputs.cache-hit != 'true' && (success() || steps.create-screenshots.conclusion == 'failure')
         run: npm run report-ci
         working-directory: ./emailonacid
+      - name: List files in the repository
+        run: find ${{ github.workspace }} -ls
       - name: Save diff to cache
         if: steps.cache-diff-restore.outputs.cache-hit != 'true'
         id: cache-primes-save
