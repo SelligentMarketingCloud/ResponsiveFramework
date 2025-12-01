@@ -18,14 +18,13 @@ class EoaClient {
 
         const requestClients = this.config.clients ?? getClients(this.config.clientsPath);
         const basePath = this.config.basePath ?? '../output/';
+        const timeout = this.config.timeout ?? 180000;
 
         const emailClient = createClient({
             apiKey: this.config.apiKey,
             accountPassword: this.config.accountPassword,
             defaultClients: requestClients,
-            poll: {
-                timeout: 180000,
-            }
+            poll: { timeout }
         })
 
         const availableClients = (await emailClient.getClients())
@@ -55,6 +54,7 @@ class EoaClient {
                     apiKey: this.config.apiKey,
                     accountPassword: this.config.accountPassword
                 },
+                poll: { timeout },
                 debug: true,
             });
 
