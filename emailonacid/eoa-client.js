@@ -1,5 +1,6 @@
 const { getClients } = require('./eoa-config');
 const { configureCreateEmail } = require('@researchgate/emailonacid-snapshot');
+const { withDefaultPlugins } = require('@researchgate/emailonacid-snapshot/lib/config');
 const createClient = require('@researchgate/emailonacid-client');
 const fs = require('fs');
 const path = require('path');
@@ -48,22 +49,23 @@ class EoaClient {
                 .filter(ca =>
                     !ca.success && ca.retries < retries);
 
-            const email = await configureCreateEmail({
-                clients: clientsToDo.map(ca => ca.client),
-                credentials: {
-                    apiKey: this.config.apiKey,
-                    accountPassword: this.config.accountPassword
-                },
-                debug: true,
-                plugins: [
-                    { 
-                        name: 'limits',
-                        convert: (context) => {
-                            context.stream.setMaxListeners(requestClients.length * 2);
-                        },
-                    }
-                ]
-            })(emailContent);
+            const email = await configureCreateEmail(
+                withDefaultPlugins({
+                    clients: clientsToDo.map(ca => ca.client),
+                    credentials: {
+                        apiKey: this.config.apiKey,
+                        accountPassword: this.config.accountPassword
+                    },
+                    debug: true,
+                    plugins: [
+                        { 
+                            name: 'limits',
+                            convert: (context) => {
+                                context.stream.setMaxListeners(requestClients.length * 2);
+                            },
+                        }
+                    ]
+                }))(emailContent);
 
             const results = await Promise.all(
                 clientsToDo.map(async ({ client, retries, success }) => {
