@@ -4,6 +4,8 @@ const config = require('./eoa-config');
 (async () => {
     
     const emailClient = new EoaClient({
+        apiKey: process.env.EOA_API_KEY,
+        accountPassword: process.env.EOA_ACCOUNT_PASSWORD,
         clientsPath: 'clients.txt'
     });
 
