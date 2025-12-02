@@ -33,3 +33,4 @@ outlook2021_win11_dm_dt
 
 # Mobile
 iphone16promax_18_dm
+android12_gmailapp_pixel6_lm
