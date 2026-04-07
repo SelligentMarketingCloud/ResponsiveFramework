@@ -117,7 +117,5 @@ jobs:
               issue_number: parseInt('${{ steps.pr-info.outputs.number }}'),
               owner: context.repo.owner,
               repo: context.repo.repo,
-              body: `### :warning: Your changes introduced visual differences.
-1. First [login here](${{ steps.variables.outputs.EOA_URL }})
-2. Then [view the differences here](${{ steps.variables.outputs.EOA_URL }}/index.html)`
+              body: `### :warning: Your changes introduced visual differences.\n1. First [login here](${{ steps.variables.outputs.EOA_URL }})\n2. Then [view the differences here](${{ steps.variables.outputs.EOA_URL }}/index.html)`
             })
