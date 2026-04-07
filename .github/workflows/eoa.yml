@@ -1,8 +1,5 @@
 name: Validate Responsive Framework
 
-permissions:
-  pull-requests: write
-
 on:
   workflow_call:
 
@@ -85,16 +82,3 @@ jobs:
         with:
           name: eoa
           path: diff
-      - name: Add PR comment
-        if: failure() && steps.check-diff.conclusion == 'failure'
-        uses: actions/github-script@v8
-        with:
-          script: |
-            github.rest.issues.createComment({
-              issue_number: context.issue.number,
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              body: `### :warning: Your changes introduced visual differences.
-              1. First [login here](${{ steps.variables.outputs.EOA_URL }})
-              2. Then [view the differences here](${{ steps.variables.outputs.EOA_URL }}/index.html)`
-            })
