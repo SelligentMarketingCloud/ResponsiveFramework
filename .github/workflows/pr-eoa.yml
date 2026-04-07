@@ -1,0 +1,121 @@
+name: Validate PR Screenshots
+
+permissions:
+  actions: read
+  pull-requests: write
+
+on:
+  workflow_run:
+    workflows: ["Validate Pull Request"]
+    types: [completed]
+
+jobs:
+  validate:
+    name: Capture and compare screenshots
+    runs-on: ubuntu-latest
+    environment:
+      name: eoa
+      url: ${{ (steps.screenshot-report.conclusion == 'success' || steps.diff-report.conclusion == 'success') && steps.variables.outputs.EOA_URL || '' }}
+    steps:
+      - id: variables
+        run: echo "EOA_URL=https://www.artifact.ci/artifact/view/${{ github.repository }}/run/${{ github.run_id }}.${{ github.run_attempt }}/eoa" >> "$GITHUB_OUTPUT"
+      - name: Get PR info
+        id: pr-info
+        uses: actions/github-script@v8
+        with:
+          script: |
+            const prs = await github.rest.pulls.list({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              state: 'open'
+            });
+            const pr = prs.data.find(pr => pr.head.sha === context.payload.workflow_run.head_sha);
+            if (pr) {
+              core.setOutput('number', pr.number);
+            }
+      - name: 📄 Checkout main branch
+        uses: actions/checkout@v5
+        with:
+          lfs: true
+      - name: 📥 Download latest.html from PR artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: latest-html
+          github-token: ${{ github.token }}
+          run-id: ${{ github.event.workflow_run.id }}
+          path: source
+      - name: Validate downloaded latest.html
+        run: |
+          # Ensure the artifact is an HTML file and not an executable
+          file source/latest.html
+          head -1 source/latest.html | grep -qiE '<!doctype html|<html' || (echo "Artifact is not a valid HTML file" && exit 1)
+      - name: 🔨 Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: '18'
+      - name: Copy baseline screenshots
+        run: mkdir -p diff/base && cp -r output/*.png diff/base
+      - name: Install dependencies
+        run: npm ci
+        working-directory: ./emailonacid
+      - name: 📸 Capture screenshots
+        id: screenshots
+        run: npm run eoa
+        working-directory: ./emailonacid
+        env:
+          EOA_ACCOUNT_PASSWORD: ${{ secrets.EOA_ACCOUNT_PASSWORD }}
+          EOA_API_KEY: ${{ vars.EOA_API_KEY }}
+      - name: Copy compare screenshots
+        run: mkdir -p diff/compare && cp -r output/*.png diff/compare
+      - name: Compare screenshots
+        id: compare-screenshots
+        run: mkdir -p ../diff/diff && npm run diff
+        working-directory: ./emailonacid
+      - name: Generate report screenshots
+        if: success() || steps.compare-screenshots.conclusion == 'failure'
+        run: npm run report-ci
+        working-directory: ./emailonacid
+      - name: Fail if there are visual differences
+        id: check-diff
+        run: |
+          cat diff/result.json
+          exit $(jq -r .totalFailed diff/result.json)
+      - name: Generate gallery
+        # Generate gallery if no differences were found
+        run: npm run gallery
+        working-directory: ./emailonacid
+      - name: Publish screenshot page as artifact
+        id: screenshot-report
+        uses: actions/upload-artifact@v4
+        with:
+          name: eoa
+          path: output
+      - name: Publish diff report as artifact
+        id: diff-report
+        if: failure() && steps.check-diff.conclusion == 'failure'
+        uses: actions/upload-artifact@v4
+        with:
+          name: eoa
+          path: diff
+      - name: ✅ Mark PR as good to go
+        if: steps.pr-info.outputs.number && success()
+        uses: actions/github-script@v8
+        with:
+          script: |
+            github.rest.issues.createComment({
+              issue_number: parseInt('${{ steps.pr-info.outputs.number }}'),
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: '### :white_check_mark: Email rendering looks good to go!'
+            })
+      - name: Add PR comment
+        if: steps.pr-info.outputs.number && failure() && steps.check-diff.conclusion == 'failure'
+        uses: actions/github-script@v8
+        with:
+          script: |
+            github.rest.issues.createComment({
+              issue_number: parseInt('${{ steps.pr-info.outputs.number }}'),
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: `### :warning: Your changes introduced visual differences.\n1. First [login here](${{ steps.variables.outputs.EOA_URL }})\n2. Then [view the differences here](${{ steps.variables.outputs.EOA_URL }}/index.html)`
+            })
