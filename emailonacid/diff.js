@@ -106,7 +106,8 @@ async function run() {
 
     fs.mkdirSync('../output/diff', { recursive: true });
 
-    const threshold = 0.01;
+    // One pixel shifts can yield 1.83%
+    const threshold = 0.02;
 
     const allDiffs = await Promise.all(
         clientIds.map(async (clientId) => {
