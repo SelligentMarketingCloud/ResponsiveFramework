@@ -35,8 +35,6 @@ jobs:
             }
       - name: 📄 Checkout main branch
         uses: actions/checkout@v5
-        with:
-          lfs: true
       - name: 📥 Download latest.html from PR artifact
         uses: actions/download-artifact@v4
         with:
@@ -49,12 +47,17 @@ jobs:
           # Ensure the artifact is an HTML file and not an executable
           file source/latest.html
           head -1 source/latest.html | grep -qiE '<!doctype html|<html' || (echo "Artifact is not a valid HTML file" && exit 1)
+      - name: 📥 Download baseline screenshots from PR artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: baseline-screenshots
+          github-token: ${{ github.token }}
+          run-id: ${{ github.event.workflow_run.id }}
+          path: diff/base
       - name: 🔨 Setup Node.js
         uses: actions/setup-node@v6
         with:
           node-version: '18'
-      - name: Copy baseline screenshots
-        run: mkdir -p diff/base && cp -r output/*.png diff/base
       - name: Install dependencies
         run: npm ci
         working-directory: ./emailonacid
