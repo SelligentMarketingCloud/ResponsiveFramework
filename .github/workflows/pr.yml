@@ -12,6 +12,8 @@ jobs:
     steps:
       - name: 📄 Checkout
         uses: actions/checkout@v5
+        with:
+          lfs: true
       - name: 📦 Publish latest.html as artifact
         uses: actions/upload-artifact@v4
         with:
