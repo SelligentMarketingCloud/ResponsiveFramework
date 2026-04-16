@@ -62,7 +62,7 @@ jobs:
         run: npm ci
         working-directory: ./emailonacid
       - name: 🧹 Clear output directory
-        run: rm -f output/*.png
+        run: rm -f output/*.png 2>/dev/null || true
       - name: 📸 Capture screenshots
         id: screenshots
         run: npm run eoa
