@@ -9,9 +9,9 @@ The Responsive Framework is a set of HTML guidelines that was designed through y
 
 # Responsive Framework for Content Blocks
 
-To be able to use the Framework in **Content Blocks** instead of using the "m_wrapper" `<div>` to contain everything it will be necessary to use it in every Content Block.
+To use the Responsive Framework in **Content Blocks** in Engage, you'll need to include an "m_wrapper" `<div>` in your Content Blocks.
 
-Here an example of how it should look the Content Block:
+Here's an example of what that looks in a Content Block:
 
 ```
 <!-- :: Add SL into aria-label tag -->
@@ -31,7 +31,7 @@ Here an example of how it should look the Content Block:
     <![endif]-->    
 </div>
 ```
-To keep all the styling of the Framework, you can copy/paste everything in the `<head>` in a `<sg:head>`.
+To include styles from the Responsive Framework, you can copy/paste contents from the `<head>` of the Responsive Framework to `<sg:head>` in the Content Block.
 
 
 # Contributions
