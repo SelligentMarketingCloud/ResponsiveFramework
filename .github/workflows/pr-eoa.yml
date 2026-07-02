@@ -3,6 +3,7 @@ name: Validate PR Screenshots
 permissions:
   actions: read
   pull-requests: write
+  statuses: write
 
 on:
   workflow_run:
@@ -124,3 +125,20 @@ jobs:
               repo: context.repo.repo,
               body: `### :warning: Your changes introduced visual differences.\n1. First [login here](${{ steps.variables.outputs.EOA_URL }})\n2. Then [view the differences here](${{ steps.variables.outputs.EOA_URL }}/index.html)`
             })
+      - name: Report status to PR commit
+        if: always()
+        uses: actions/github-script@v8
+        with:
+          script: |
+            const headSha = context.payload.workflow_run.head_sha;
+            const jobStatus = '${{ job.status }}';
+            const state = jobStatus === 'success' ? 'success' : (jobStatus === 'failure' ? 'failure' : 'error');
+            await github.rest.repos.createCommitStatus({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              sha: headSha,
+              state: state,
+              context: 'validate / Capture and compare screenshots',
+              description: state === 'success' ? 'Email rendering looks good to go!' : 'Visual differences detected',
+              target_url: '${{ steps.variables.outputs.EOA_URL }}'
+            });
