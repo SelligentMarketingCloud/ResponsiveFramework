@@ -10,16 +10,25 @@ on:
     workflows: ["Validate Pull Request"]
     types: [completed]
 
+concurrency:
+  group: github-pages
+  cancel-in-progress: false
+
 jobs:
   validate:
     name: Capture and compare screenshots
     runs-on: ubuntu-latest
+    outputs:
+      pages_ready: ${{ steps.stage-pages.outcome == 'success' }}
+      eoa_url: ${{ steps.variables.outputs.EOA_URL }}
+      pr_number: ${{ steps.pr-info.outputs.number }}
+      check_diff_failed: ${{ steps.check-diff.outcome == 'failure' }}
+      validate_success: ${{ steps.check-diff.outcome == 'success' }}
     environment:
       name: eoa
-      url: ${{ (steps.screenshot-report.conclusion == 'success' || steps.diff-report.conclusion == 'success') && steps.variables.outputs.EOA_URL || '' }}
     steps:
       - id: variables
-        run: echo "EOA_URL=https://www.artifact.ci/artifact/view/${{ github.repository }}/run/${{ github.run_id }}.${{ github.run_attempt }}/eoa" >> "$GITHUB_OUTPUT"
+        run: echo "EOA_URL=https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}/eoa/run-${{ github.run_id }}-${{ github.run_attempt }}/" >> "$GITHUB_OUTPUT"
       - name: Get PR info
         id: pr-info
         uses: actions/github-script@v8
@@ -87,52 +96,96 @@ jobs:
           cat diff/result.json
           exit $(jq -r .totalFailed diff/result.json)
       - name: Generate gallery
-        # Generate gallery if no differences were found
+        if: steps.check-diff.outcome == 'success'
         run: npm run gallery
         working-directory: ./emailonacid
-      - name: Publish screenshot page as artifact
-        id: screenshot-report
+      - name: Stage pages report
+        id: stage-pages
+        if: success() || steps.check-diff.conclusion == 'failure'
+        run: |
+          mkdir -p pages-report
+          if [ "${{ steps.check-diff.outcome }}" = "success" ]; then
+            cp -r output/. pages-report/
+          else
+            cp -r diff/. pages-report/
+          fi
+      - name: Upload pages report
+        if: steps.stage-pages.outcome == 'success'
         uses: actions/upload-artifact@v4
         with:
-          name: eoa
-          path: output
-      - name: Publish diff report as artifact
-        id: diff-report
-        if: failure() && steps.check-diff.conclusion == 'failure'
-        uses: actions/upload-artifact@v4
+          name: pages-report
+          path: pages-report
+
+  deploy-pages:
+    name: Publish EOA report to GitHub Pages
+    needs: validate
+    if: always() && needs.validate.outputs.pages_ready == 'true'
+    runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
+      contents: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy.outputs.page_url }}
+    steps:
+      - name: 📄 Checkout
+        uses: actions/checkout@v5
         with:
-          name: eoa
-          path: diff
+          fetch-depth: 0
+      - name: 📥 Download pages report
+        uses: actions/download-artifact@v4
+        with:
+          name: pages-report
+          path: pages-report
+      - name: 🚀 Deploy EOA report
+        id: deploy
+        uses: ./.github/actions/deploy-site
+        with:
+          mode: add-eoa
+          source_path: pages-report
+          run_id: ${{ github.run_id }}
+          run_attempt: ${{ github.run_attempt }}
+
+  notify:
+    name: Update PR status and comments
+    needs: [validate, deploy-pages]
+    if: always() && needs.validate.outputs.pages_ready == 'true'
+    runs-on: ubuntu-latest
+    permissions:
+      pull-requests: write
+      statuses: write
+    steps:
       - name: ✅ Mark PR as good to go
-        if: steps.pr-info.outputs.number && success()
+        if: needs.validate.outputs.pr_number && needs.validate.outputs.validate_success == 'true' && needs.deploy-pages.result == 'success'
         uses: actions/github-script@v8
         with:
           script: |
             github.rest.issues.createComment({
-              issue_number: parseInt('${{ steps.pr-info.outputs.number }}'),
+              issue_number: parseInt('${{ needs.validate.outputs.pr_number }}'),
               owner: context.repo.owner,
               repo: context.repo.repo,
-              body: '### :white_check_mark: Email rendering looks good to go!'
+              body: '### :white_check_mark: Email rendering looks good to go!\n\n[View screenshot gallery](${{ needs.validate.outputs.eoa_url }})'
             })
       - name: Add PR comment
-        if: steps.pr-info.outputs.number && failure() && steps.check-diff.conclusion == 'failure'
+        if: needs.validate.outputs.pr_number && needs.validate.outputs.check_diff_failed == 'true' && needs.deploy-pages.result == 'success'
         uses: actions/github-script@v8
         with:
           script: |
             github.rest.issues.createComment({
-              issue_number: parseInt('${{ steps.pr-info.outputs.number }}'),
+              issue_number: parseInt('${{ needs.validate.outputs.pr_number }}'),
               owner: context.repo.owner,
               repo: context.repo.repo,
-              body: `### :warning: Your changes introduced visual differences.\n1. First [login here](${{ steps.variables.outputs.EOA_URL }})\n2. Then [view the differences here](${{ steps.variables.outputs.EOA_URL }}/index.html)`
+              body: `### :warning: Your changes introduced visual differences.\n\n[View the differences here](${{ needs.validate.outputs.eoa_url }}index.html)`
             })
       - name: Report status to PR commit
-        if: always()
         uses: actions/github-script@v8
         with:
           script: |
             const headSha = context.payload.workflow_run.head_sha;
-            const jobStatus = '${{ job.status }}';
-            const state = jobStatus === 'success' ? 'success' : (jobStatus === 'failure' ? 'failure' : 'error');
+            const validateSuccess = '${{ needs.validate.outputs.validate_success }}' === 'true';
+            const deploySuccess = '${{ needs.deploy-pages.result }}' === 'success';
+            const state = validateSuccess && deploySuccess ? 'success' : 'failure';
             await github.rest.repos.createCommitStatus({
               owner: context.repo.owner,
               repo: context.repo.repo,
@@ -140,5 +193,5 @@ jobs:
               state: state,
               context: 'validate / Capture and compare screenshots',
               description: state === 'success' ? 'Email rendering looks good to go!' : 'Visual differences detected',
-              target_url: '${{ steps.variables.outputs.EOA_URL }}'
-            });
+              target_url: '${{ needs.validate.outputs.eoa_url }}'
+            })
