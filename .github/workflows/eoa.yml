@@ -3,16 +3,23 @@ name: Validate Responsive Framework
 on:
   workflow_call:
 
+concurrency:
+  group: github-pages
+  cancel-in-progress: false
+
 jobs:
   validate:
     name: Capture and compare screenshots
     runs-on: ubuntu-latest
+    outputs:
+      pages_ready: ${{ steps.stage-pages.outcome == 'success' }}
+      eoa_url: ${{ steps.variables.outputs.EOA_URL }}
     environment:
       name: eoa
-      url: ${{ (steps.screenshot-report.conclusion == 'success' || steps.diff-report.conclusion == 'success') && steps.variables.outputs.EOA_URL || '' }}
+      url: ${{ steps.variables.outputs.EOA_URL }}
     steps:
       - id: variables
-        run: echo "EOA_URL=https://www.artifact.ci/artifact/view/${{ github.repository }}/run/${{ github.run_id }}.${{ github.run_attempt }}/eoa" >> "$GITHUB_OUTPUT"
+        run: echo "EOA_URL=https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}/eoa/run-${{ github.run_id }}-${{ github.run_attempt }}/" >> "$GITHUB_OUTPUT"
       - uses: actions/checkout@v5
         with:
           lfs: true
@@ -65,20 +72,54 @@ jobs:
         run: |
           cat diff/result.json
           exit $(jq -r .totalFailed diff/result.json)
-      - name: Generate report screenshots
-        # Generate gallery if no differences were found
+      - name: Generate gallery
+        if: steps.check-diff.outcome == 'success'
         run: npm run gallery
         working-directory: ./emailonacid
-      - name: Publish screenshot page as artifact
-        id: screenshot-report
+      - name: Stage pages report
+        id: stage-pages
+        if: success() || steps.check-diff.conclusion == 'failure'
+        run: |
+          mkdir -p pages-report
+          if [ "${{ steps.check-diff.outcome }}" = "success" ]; then
+            cp -r output/. pages-report/
+          else
+            cp -r diff/. pages-report/
+          fi
+      - name: Upload pages report
+        if: steps.stage-pages.outcome == 'success'
         uses: actions/upload-artifact@v4
         with:
-          name: eoa
-          path: output
-      - name: Publish diff report as artifact
-        id: diff-report
-        if: failure() && steps.check-diff.conclusion == 'failure'
-        uses: actions/upload-artifact@v4
+          name: pages-report
+          path: pages-report
+
+  deploy-pages:
+    name: Publish EOA report to GitHub Pages
+    needs: validate
+    if: always() && needs.validate.outputs.pages_ready == 'true'
+    runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
+      contents: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy.outputs.page_url }}
+    steps:
+      - name: 📄 Checkout
+        uses: actions/checkout@v5
         with:
-          name: eoa
-          path: diff
+          fetch-depth: 0
+      - name: 📥 Download pages report
+        uses: actions/download-artifact@v4
+        with:
+          name: pages-report
+          path: pages-report
+      - name: 🚀 Deploy EOA report
+        id: deploy
+        uses: ./.github/actions/deploy-site
+        with:
+          mode: add-eoa
+          source_path: pages-report
+          run_id: ${{ github.run_id }}
+          run_attempt: ${{ github.run_attempt }}

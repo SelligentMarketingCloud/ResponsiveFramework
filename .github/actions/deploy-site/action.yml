@@ -1,0 +1,92 @@
+name: Deploy GitHub Pages site
+description: Merge content into the GitHub Pages site and deploy without overwriting unrelated folders
+
+inputs:
+  mode:
+    description: 'add-eoa to publish a run report, or update-root to refresh the gallery'
+    required: true
+  source_path:
+    description: 'Directory whose contents should be published'
+    required: true
+  run_id:
+    description: 'Workflow run id (required for add-eoa mode)'
+    required: false
+  run_attempt:
+    description: 'Workflow run attempt (required for add-eoa mode)'
+    required: false
+  max_age_days:
+    description: 'Remove EOA report folders older than this many days'
+    required: false
+    default: '30'
+
+outputs:
+  page_url:
+    description: 'URL of the deployed GitHub Pages site'
+    value: ${{ steps.deployment.outputs.page_url }}
+
+runs:
+  using: composite
+  steps:
+    - name: Load existing site from gh-pages branch
+      shell: bash
+      run: |
+        set -euo pipefail
+        if git ls-remote --exit-code origin refs/heads/gh-pages >/dev/null 2>&1; then
+          git fetch origin gh-pages
+          git worktree add -f site origin/gh-pages
+        else
+          mkdir -p site
+        fi
+
+    - name: Merge site content
+      shell: bash
+      env:
+        MODE: ${{ inputs.mode }}
+        SOURCE_PATH: ${{ inputs.source_path }}
+        RUN_ID: ${{ inputs.run_id }}
+        RUN_ATTEMPT: ${{ inputs.run_attempt }}
+        EOA_MAX_AGE_DAYS: ${{ inputs.max_age_days }}
+      run: |
+        set -euo pipefail
+        chmod +x .github/scripts/pages-site.sh
+        case "$MODE" in
+          add-eoa)
+            .github/scripts/pages-site.sh add-eoa "$RUN_ID" "$RUN_ATTEMPT" "$SOURCE_PATH"
+            .github/scripts/pages-site.sh cleanup
+            ;;
+          update-root)
+            .github/scripts/pages-site.sh update-root "$SOURCE_PATH"
+            ;;
+          *)
+            echo "Unsupported mode: $MODE" >&2
+            exit 1
+            ;;
+        esac
+
+    - name: Publish site artifact
+      uses: actions/upload-pages-artifact@v4
+      with:
+        path: site
+
+    - name: Deploy to GitHub Pages
+      id: deployment
+      uses: actions/deploy-pages@v4
+
+    - name: Persist site state to gh-pages branch
+      shell: bash
+      run: |
+        set -euo pipefail
+        cd site
+        git config user.name "github-actions[bot]"
+        git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+        if ! git rev-parse --git-dir >/dev/null 2>&1; then
+          git init -b gh-pages
+          git remote add origin "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}.git"
+        fi
+        git add -A
+        if git diff --staged --quiet; then
+          echo "No site changes to persist"
+          exit 0
+        fi
+        git commit -m "pages: deploy from workflow run ${{ github.run_id }}"
+        git push origin HEAD:gh-pages
