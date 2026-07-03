@@ -64,7 +64,9 @@ jobs:
         run: npm run gallery
         working-directory: ./emailonacid
       - name: 📦 Package html gallery
-        run: tar -czf responsive-framework-gallery.tar.gz -C "$GITHUB_WORKSPACE/output" .
+        run: |
+          test -f "$GITHUB_WORKSPACE/output/index.html"
+          tar -czf responsive-framework-gallery.tar.gz -C "$GITHUB_WORKSPACE/output" .
       - name: 🚀 Create release
         if: needs.version.outputs.release-existing != github.ref_name
         run: |
