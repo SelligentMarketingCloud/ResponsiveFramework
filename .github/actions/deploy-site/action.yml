@@ -18,6 +18,10 @@ inputs:
     description: 'Remove EOA report folders older than this many days'
     required: false
     default: '30'
+  deploy:
+    description: 'Whether to deploy to GitHub Pages after uploading the artifact (set to false to only prepare and upload)'
+    required: false
+    default: 'true'
 
 outputs:
   page_url:
@@ -68,10 +72,6 @@ runs:
       with:
         path: site
 
-    - name: Deploy to GitHub Pages
-      id: deployment
-      uses: actions/deploy-pages@v4
-
     - name: Persist site state to gh-pages branch
       shell: bash
       run: |
@@ -90,3 +90,8 @@ runs:
         fi
         git commit -m "pages: deploy from workflow run ${{ github.run_id }}"
         git push origin HEAD:gh-pages
+
+    - name: Deploy to GitHub Pages
+      if: ${{ inputs.deploy == 'true' }}
+      id: deployment
+      uses: actions/deploy-pages@v4

@@ -116,18 +116,13 @@ jobs:
           name: pages-report
           path: pages-report
 
-  deploy-pages:
-    name: Publish EOA report to GitHub Pages
+  prepare-pages:
+    name: Prepare EOA report for GitHub Pages
     needs: validate
     if: always() && needs.validate.outputs.pages_ready == 'true'
     runs-on: ubuntu-latest
     permissions:
-      pages: write
-      id-token: write
       contents: write
-    environment:
-      name: github-pages
-      url: ${{ steps.deploy.outputs.page_url }}
     steps:
       - name: 📄 Checkout
         uses: actions/checkout@v5
@@ -138,18 +133,34 @@ jobs:
         with:
           name: pages-report
           path: pages-report
-      - name: 🚀 Deploy EOA report
-        id: deploy
+      - name: 🗂️ Prepare EOA report
         uses: ./.github/actions/deploy-site
         with:
           mode: add-eoa
           source_path: pages-report
           run_id: ${{ github.run_id }}
           run_attempt: ${{ github.run_attempt }}
+          deploy: 'false'
+
+  deploy-pages:
+    name: Publish EOA report to GitHub Pages
+    needs: [validate, prepare-pages]
+    if: always() && needs.prepare-pages.result == 'success'
+    runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy.outputs.page_url }}
+    steps:
+      - name: 🚀 Deploy to GitHub Pages
+        id: deploy
+        uses: actions/deploy-pages@v4
 
   notify:
     name: Update PR status and comments
-    needs: [validate, deploy-pages]
+    needs: [validate, prepare-pages, deploy-pages]
     if: always() && needs.validate.outputs.pages_ready == 'true'
     runs-on: ubuntu-latest
     permissions:
