@@ -110,7 +110,7 @@ jobs:
             cp -r diff/. pages-report/
           fi
       - name: Upload pages report
-        if: steps.stage-pages.outcome == 'success'
+        if: always() && steps.stage-pages.outcome == 'success'
         uses: actions/upload-artifact@v4
         with:
           name: pages-report
