@@ -140,6 +140,7 @@ jobs:
           source_path: pages-report
           run_id: ${{ github.run_id }}
           run_attempt: ${{ github.run_attempt }}
+          restore_root_from_release: 'true'
           deploy: 'false'
 
   deploy-pages:
