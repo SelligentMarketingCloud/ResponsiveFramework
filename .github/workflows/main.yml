@@ -56,6 +56,15 @@ jobs:
     steps:
       - name: 📄 Checkout
         uses: actions/checkout@v5
+      - name: 🔨 Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: '18'
+      - name: 🔨 Create html gallery
+        run: npm run gallery
+        working-directory: ./emailonacid
+      - name: 📦 Package html gallery
+        run: tar -czf responsive-framework-gallery.tar.gz -C output .
       - name: 🚀 Create release
         if: needs.version.outputs.release-existing != github.ref_name
         run: |
@@ -65,6 +74,7 @@ jobs:
       - name: 🚀 Upload release files
         run: |
           gh release upload ${{ github.ref_name }} 'source/latest.html#Responsive Framework'
+          gh release upload ${{ github.ref_name }} 'responsive-framework-gallery.tar.gz#Responsive Framework gallery'
         env:
           GITHUB_TOKEN: ${{ github.TOKEN }}
    

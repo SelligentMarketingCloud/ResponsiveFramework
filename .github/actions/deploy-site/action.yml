@@ -18,6 +18,14 @@ inputs:
     description: 'Remove EOA report folders older than this many days'
     required: false
     default: '30'
+  restore_root_from_release:
+    description: 'Whether to refresh the site root from the latest stable release gallery before merging content'
+    required: false
+    default: 'false'
+  release_asset_name:
+    description: 'Release asset name containing the published HTML gallery archive'
+    required: false
+    default: 'responsive-framework-gallery.tar.gz'
   deploy:
     description: 'Whether to deploy to GitHub Pages after uploading the artifact (set to false to only prepare and upload)'
     required: false
@@ -41,6 +49,36 @@ runs:
         else
           mkdir -p site
         fi
+
+    - name: Restore root from latest stable release
+      if: ${{ inputs.restore_root_from_release == 'true' }}
+      shell: bash
+      env:
+        RELEASE_ASSET_NAME: ${{ inputs.release_asset_name }}
+        GITHUB_TOKEN: ${{ github.token }}
+      run: |
+        set -euo pipefail
+        release_tag="$(
+          gh api "repos/${{ github.repository }}/releases" \
+            --jq 'map(select(.draft == false and .prerelease == false)) | .[0].tag_name // ""'
+        )"
+
+        if [ -z "$release_tag" ]; then
+          echo "No stable release found; keeping current site root"
+          exit 0
+        fi
+
+        rm -rf release-gallery
+        mkdir -p release-gallery/archive release-gallery/root
+
+        if ! gh release download "$release_tag" --pattern "$RELEASE_ASSET_NAME" --dir release-gallery/archive; then
+          echo "Release asset $RELEASE_ASSET_NAME not found on $release_tag; keeping current site root"
+          exit 0
+        fi
+
+        tar -xzf "release-gallery/archive/$RELEASE_ASSET_NAME" -C release-gallery/root
+        chmod +x .github/scripts/pages-site.sh
+        .github/scripts/pages-site.sh update-root release-gallery/root
 
     - name: Merge site content
       shell: bash
