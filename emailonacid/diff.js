@@ -63,48 +63,50 @@ async function compareWithBestOffset(baseImage, compareImage, diffImage, failure
     let bestPercentage = Infinity;
     let bestReason = null;
     let bestFile = null;
-    let bestDiffTmp = null;
 
     // failureThreshold of 1 (100%) ensures odiff always writes the diff image regardless of match.
     const alwaysWrite = 1;
 
+    // Try (0,0) first — the most likely perfect match — then the 8 shifted offsets.
+    const offsets = [[0, 0], [-1, -1], [-1, 0], [-1, 1], [0, -1], [0, 1], [1, -1], [1, 0], [1, 1]];
+
     try {
-        for (const dx of [-1, 0, 1]) {
-            for (const dy of [-1, 0, 1]) {
-                const width = Math.min(bw, cw) - Math.abs(dx);
-                const height = Math.min(bh, ch) - Math.abs(dy);
-                if (width <= 0 || height <= 0) continue;
+        for (const [dx, dy] of offsets) {
+            const width = Math.min(bw, cw) - Math.abs(dx);
+            const height = Math.min(bh, ch) - Math.abs(dy);
+            if (width <= 0 || height <= 0) continue;
 
-                const baseLeft = Math.max(0, dx);
-                const baseTop  = Math.max(0, dy);
-                const cmpLeft  = Math.max(0, -dx);
-                const cmpTop   = Math.max(0, -dy);
+            const baseLeft = Math.max(0, dx);
+            const baseTop  = Math.max(0, dy);
+            const cmpLeft  = Math.max(0, -dx);
+            const cmpTop   = Math.max(0, -dy);
 
-                const tmpBase    = path.join(tmpDir, `base_${dx}_${dy}.png`);
-                const tmpCompare = path.join(tmpDir, `cmp_${dx}_${dy}.png`);
-                const tmpDiff    = path.join(tmpDir, `diff_${dx}_${dy}.png`);
+            const tmpBase    = path.join(tmpDir, `base_${dx}_${dy}.png`);
+            const tmpCompare = path.join(tmpDir, `cmp_${dx}_${dy}.png`);
+            const tmpDiff    = path.join(tmpDir, `diff_${dx}_${dy}.png`);
 
-                await sharp(baseImage).extract({ left: baseLeft, top: baseTop, width, height }).toFile(tmpBase);
-                await sharp(compareImage).extract({ left: cmpLeft, top: cmpTop, width, height }).toFile(tmpCompare);
+            await sharp(baseImage).extract({ left: baseLeft, top: baseTop, width, height }).toFile(tmpBase);
+            await sharp(compareImage).extract({ left: cmpLeft, top: cmpTop, width, height }).toFile(tmpCompare);
 
-                const result = await compare(tmpBase, tmpCompare, tmpDiff, {
-                    failureThreshold: alwaysWrite,
-                    noFailOnFsErrors: true,
-                });
+            const result = await compare(tmpBase, tmpCompare, tmpDiff, {
+                failureThreshold: alwaysWrite,
+                noFailOnFsErrors: true,
+            });
 
-                const percentage = result.reason === 'pixel-diff' ? result.diffPercentage / 100 : 1;
+            const percentage = result.reason === 'pixel-diff' ? result.diffPercentage / 100 : 1;
 
-                if (percentage < bestPercentage) {
-                    bestPercentage = percentage;
-                    bestReason = result.reason;
-                    bestFile = result.file;
-                    bestDiffTmp = tmpDiff;
+            if (percentage < bestPercentage) {
+                bestPercentage = percentage;
+                bestReason = result.reason;
+                bestFile = result.file;
+
+                if (fs.existsSync(tmpDiff)) {
+                    fs.copyFileSync(tmpDiff, diffImage);
                 }
-            }
-        }
 
-        if (bestDiffTmp && fs.existsSync(bestDiffTmp)) {
-            fs.copyFileSync(bestDiffTmp, diffImage);
+                // Perfect match — no need to try remaining offsets.
+                if (bestPercentage === 0) break;
+            }
         }
     } finally {
         try {
