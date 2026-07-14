@@ -68,7 +68,7 @@ async function compareWithBestOffset(baseImage, compareImage, diffImage, failure
     const alwaysWrite = 1;
 
     // Try (0,0) first — the most likely perfect match — then the 8 shifted offsets.
-    const offsets = [[0, 0], [-1, -1], [-1, 0], [-1, 1], [0, -1], [0, 1], [1, -1], [1, 0], [1, 1]];
+    const offsets = [[0, 0], [-1, 0], [1, 0]];
 
     try {
         for (const [dx, dy] of offsets) {
