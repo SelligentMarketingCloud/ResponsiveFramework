@@ -1,5 +1,6 @@
 const { compare } = require("odiff-bin");
 const fs = require('fs');
+const os = require('os');
 const path = require('path');
 const sharp = require('sharp');
 
@@ -47,6 +48,76 @@ async function getCroppedImages(clientId) {
     };
 }
 
+async function compareWithBestOffset(baseImage, compareImage, diffImage, failureThreshold) {
+    if (!fs.existsSync(baseImage) || !fs.existsSync(compareImage)) {
+        const { reason, diffPercentage, match: pixelMatch, file } = await compare(
+            baseImage, compareImage, diffImage, { failureThreshold, noFailOnFsErrors: true });
+        const percentage = reason === 'pixel-diff' ? diffPercentage / 100 : 1;
+        return { reason, percentage, match: pixelMatch || percentage < failureThreshold, file };
+    }
+
+    const { width: bw, height: bh } = await sharp(baseImage).metadata();
+    const { width: cw, height: ch } = await sharp(compareImage).metadata();
+
+    const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), `eoa-diff-${process.pid}-`));
+    let bestPercentage = Infinity;
+    let bestReason = null;
+    let bestFile = null;
+    let bestDiffTmp = null;
+
+    // failureThreshold of 1 (100%) ensures odiff always writes the diff image regardless of match.
+    const alwaysWrite = 1;
+
+    try {
+        for (const dx of [-1, 0, 1]) {
+            for (const dy of [-1, 0, 1]) {
+                const width = Math.min(bw, cw) - Math.abs(dx);
+                const height = Math.min(bh, ch) - Math.abs(dy);
+                if (width <= 0 || height <= 0) continue;
+
+                const baseLeft = Math.max(0, dx);
+                const baseTop  = Math.max(0, dy);
+                const cmpLeft  = Math.max(0, -dx);
+                const cmpTop   = Math.max(0, -dy);
+
+                const tmpBase    = path.join(tmpDir, `base_${dx}_${dy}.png`);
+                const tmpCompare = path.join(tmpDir, `cmp_${dx}_${dy}.png`);
+                const tmpDiff    = path.join(tmpDir, `diff_${dx}_${dy}.png`);
+
+                await sharp(baseImage).extract({ left: baseLeft, top: baseTop, width, height }).toFile(tmpBase);
+                await sharp(compareImage).extract({ left: cmpLeft, top: cmpTop, width, height }).toFile(tmpCompare);
+
+                const result = await compare(tmpBase, tmpCompare, tmpDiff, {
+                    failureThreshold: alwaysWrite,
+                    noFailOnFsErrors: true,
+                });
+
+                const percentage = result.reason === 'pixel-diff' ? result.diffPercentage / 100 : 1;
+
+                if (percentage < bestPercentage) {
+                    bestPercentage = percentage;
+                    bestReason = result.reason;
+                    bestFile = result.file;
+                    bestDiffTmp = tmpDiff;
+                }
+            }
+        }
+
+        if (bestDiffTmp && fs.existsSync(bestDiffTmp)) {
+            fs.copyFileSync(bestDiffTmp, diffImage);
+        }
+    } finally {
+        try {
+            fs.rmSync(tmpDir, { recursive: true, force: true });
+        } catch (e) {
+            console.error(`[diff] Failed to clean up temp directory ${tmpDir}: ${e.message}`);
+        }
+    }
+
+    const match = bestPercentage < failureThreshold;
+    return { reason: bestReason, percentage: bestPercentage, match, file: bestFile };
+}
+
 async function createDiff(threshold, clientId, clientsMap) {
 
     const failureThreshold = threshold;
@@ -55,19 +126,12 @@ async function createDiff(threshold, clientId, clientsMap) {
 
     console.log(`[diff] Comparing images for ${clientId}: ${baseImage} vs ${compareImage}`);
 
-    const { reason, diffPercentage, match: pixelMatch, file } = await compare(
+    const { reason, percentage, match, file } = await compareWithBestOffset(
         baseImage,
         compareImage,
-        `../diff/diff/${clientId}.png`, {
-            failureThreshold,
-            noFailOnFsErrors: true,
-        });
-
-    const percentage = reason == 'pixel-diff'
-        ? diffPercentage / 100
-        : 1;
-
-    const match = pixelMatch || percentage < failureThreshold;
+        `../diff/diff/${clientId}.png`,
+        failureThreshold,
+    );
 
     const { client, os, category, browser } = clientsMap[clientId];
 
@@ -106,8 +170,8 @@ async function run() {
 
     fs.mkdirSync('../output/diff', { recursive: true });
 
-    // One pixel shifts can yield 1.83%
-    const threshold = 0.02;
+    // One pixel shifts are corrected by trying ±1px offsets before comparing.
+    const threshold = 0.015;
 
     const allDiffs = await Promise.all(
         clientIds.map(async (clientId) => {
