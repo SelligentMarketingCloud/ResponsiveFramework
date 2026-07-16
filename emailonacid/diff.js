@@ -64,9 +64,6 @@ async function compareWithBestOffset(baseImage, compareImage, diffImage, failure
     let bestReason = null;
     let bestFile = null;
 
-    // failureThreshold of 1 (100%) ensures odiff always writes the diff image regardless of match.
-    const alwaysWrite = 1;
-
     // Try (0,0) first — the most likely perfect match — then the 8 shifted offsets.
     const offsets = [[0, 0], [-1, 0], [1, 0]];
 
@@ -89,11 +86,17 @@ async function compareWithBestOffset(baseImage, compareImage, diffImage, failure
             await sharp(compareImage).extract({ left: cmpLeft, top: cmpTop, width, height }).toFile(tmpCompare);
 
             const result = await compare(tmpBase, tmpCompare, tmpDiff, {
-                failureThreshold: alwaysWrite,
                 noFailOnFsErrors: true,
             });
 
-            const percentage = result.reason === 'pixel-diff' ? result.diffPercentage / 100 : 1;
+            let percentage;
+            if (result.match) {
+                percentage = 0;
+            } else if (result.reason === 'pixel-diff') {
+                percentage = result.diffPercentage / 100;
+            } else {
+                percentage = 1;
+            }
 
             if (percentage < bestPercentage) {
                 bestPercentage = percentage;
