@@ -6,6 +6,17 @@ SITE_DIR="${SITE_DIR:-site}"
 EOA_DIR="${EOA_DIR:-eoa}"
 MAX_AGE_DAYS="${EOA_MAX_AGE_DAYS:-30}"
 
+has_legacy_layout_markers() {
+  local source="$1"
+  local markers=("emailonacid" "source" "pages-report" "site")
+  for marker in "${markers[@]}"; do
+    if [ -d "$source/$marker" ]; then
+      return 0
+    fi
+  done
+  return 1
+}
+
 case "$COMMAND" in
   add-eoa)
     RUN_ID="${2:?run id required}"
@@ -18,7 +29,8 @@ case "$COMMAND" in
     ;;
   update-root)
     SOURCE="${2:?source path required}"
-    if [ -d "$SOURCE/output" ] && { [ ! -f "$SOURCE/index.html" ] || [ -d "$SOURCE/emailonacid" ] || [ -d "$SOURCE/source" ] || [ -d "$SOURCE/pages-report" ] || [ -d "$SOURCE/site" ]; }; then
+    # Legacy/mispackaged artifacts can contain repository folders at root with the real site under output/.
+    if [ -d "$SOURCE/output" ] && { [ ! -f "$SOURCE/index.html" ] || has_legacy_layout_markers "$SOURCE"; }; then
       SOURCE="$SOURCE/output"
     fi
     mkdir -p "$SITE_DIR"
