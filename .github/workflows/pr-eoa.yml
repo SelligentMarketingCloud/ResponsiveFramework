@@ -162,7 +162,7 @@ jobs:
   notify:
     name: Update PR status and comments
     needs: [validate, prepare-pages, deploy-pages]
-    if: always() && needs.validate.outputs.pages_ready == 'true'
+    if: always()
     runs-on: ubuntu-latest
     permissions:
       pull-requests: write
