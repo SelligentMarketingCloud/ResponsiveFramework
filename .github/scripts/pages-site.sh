@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-COMMAND="${1:?Usage: pages-site.sh add-eoa|update-root|cleanup}"
+COMMAND="${1:?Usage: pages-site.sh sanitize|add-eoa|update-root|cleanup}"
 SITE_DIR="${SITE_DIR:-site}"
 EOA_DIR="${EOA_DIR:-eoa}"
 MAX_AGE_DAYS="${EOA_MAX_AGE_DAYS:-30}"
@@ -28,6 +28,24 @@ should_normalize_to_output() {
 }
 
 case "$COMMAND" in
+  sanitize)
+    # Remove legacy repository directories that should never be published
+    for dir in emailonacid source pages-report site; do
+      if [ -d "$SITE_DIR/$dir" ]; then
+        echo "Removing legacy directory from site: $SITE_DIR/$dir"
+        rm -rf "$SITE_DIR/$dir"
+      fi
+    done
+    # Promote output/ contents to root when the site was committed in the old layout
+    if should_normalize_to_output "$SITE_DIR"; then
+      echo "Normalizing: promoting $SITE_DIR/output/ contents to site root"
+      tmp_dir="$(mktemp -d)"
+      cp -r "$SITE_DIR/output"/. "$tmp_dir/"
+      rm -rf "$SITE_DIR/output"
+      cp -r "$tmp_dir"/. "$SITE_DIR/"
+      rm -rf "$tmp_dir"
+    fi
+    ;;
   add-eoa)
     RUN_ID="${2:?run id required}"
     RUN_ATTEMPT="${3:?run attempt required}"
