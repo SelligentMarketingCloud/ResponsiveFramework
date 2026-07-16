@@ -24,3 +24,8 @@ jobs:
         with:
           name: baseline-screenshots
           path: output/*.png
+      - name: 📦 Publish clients.txt as artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: clients-txt
+          path: emailonacid/clients.txt

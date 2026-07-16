@@ -57,6 +57,13 @@ jobs:
           # Ensure the artifact is an HTML file and not an executable
           file source/latest.html
           head -1 source/latest.html | grep -qiE '<!doctype html|<html' || (echo "Artifact is not a valid HTML file" && exit 1)
+      - name: 📥 Download clients.txt from PR artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: clients-txt
+          github-token: ${{ github.token }}
+          run-id: ${{ github.event.workflow_run.id }}
+          path: emailonacid
       - name: 📥 Download baseline screenshots from PR artifact
         uses: actions/download-artifact@v4
         with:
