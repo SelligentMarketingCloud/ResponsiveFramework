@@ -6,6 +6,27 @@ SITE_DIR="${SITE_DIR:-site}"
 EOA_DIR="${EOA_DIR:-eoa}"
 MAX_AGE_DAYS="${EOA_MAX_AGE_DAYS:-30}"
 
+has_legacy_layout_markers() {
+  local source="$1"
+  # `emailonacid` and the other markers are repository/workflow directories that should never be published.
+  local markers=("emailonacid" "source" "pages-report" "site")
+  for marker in "${markers[@]}"; do
+    if [ -d "$source/$marker" ]; then
+      return 0
+    fi
+  done
+  return 1
+}
+
+should_normalize_to_output() {
+  local source="$1"
+  [ -d "$source/output" ] || return 1
+  if [ ! -f "$source/index.html" ]; then
+    return 0
+  fi
+  has_legacy_layout_markers "$source"
+}
+
 case "$COMMAND" in
   add-eoa)
     RUN_ID="${2:?run id required}"
@@ -18,6 +39,10 @@ case "$COMMAND" in
     ;;
   update-root)
     SOURCE="${2:?source path required}"
+    # Legacy/mispackaged artifacts can contain repository folders at root with the real site under output/.
+    if should_normalize_to_output "$SOURCE"; then
+      SOURCE="$SOURCE/output"
+    fi
     mkdir -p "$SITE_DIR"
     rsync -a --delete "$SOURCE"/ "$SITE_DIR"/ --exclude "$EOA_DIR"
     ;;
