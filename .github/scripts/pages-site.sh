@@ -18,6 +18,9 @@ case "$COMMAND" in
     ;;
   update-root)
     SOURCE="${2:?source path required}"
+    if [ -f "$SOURCE/output/index.html" ] && [ ! -f "$SOURCE/index.html" ]; then
+      SOURCE="$SOURCE/output"
+    fi
     mkdir -p "$SITE_DIR"
     rsync -a --delete "$SOURCE"/ "$SITE_DIR"/ --exclude "$EOA_DIR"
     ;;
