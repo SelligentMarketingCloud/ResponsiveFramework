@@ -18,7 +18,7 @@ case "$COMMAND" in
     ;;
   update-root)
     SOURCE="${2:?source path required}"
-    if [ -f "$SOURCE/output/index.html" ] && [ ! -f "$SOURCE/index.html" ]; then
+    if [ -d "$SOURCE/output" ] && { [ ! -f "$SOURCE/index.html" ] || [ -d "$SOURCE/emailonacid" ] || [ -d "$SOURCE/source" ] || [ -d "$SOURCE/pages-report" ] || [ -d "$SOURCE/site" ]; }; then
       SOURCE="$SOURCE/output"
     fi
     mkdir -p "$SITE_DIR"
