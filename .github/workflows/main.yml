@@ -82,7 +82,7 @@ jobs:
    
   deploy:
     name: Deploy GitHub pages
-    if: needs.version.outputs.release-prerelease == 'false'
+    if: github.ref == 'refs/heads/main' || needs.version.outputs.release-prerelease == 'false'
     needs: [ validate, version ]
     runs-on: ubuntu-latest
 
