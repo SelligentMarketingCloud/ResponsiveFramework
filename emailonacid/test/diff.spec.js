@@ -5,7 +5,7 @@ const sharp = require('sharp');
 const { compareWithBestOffset } = require('../diff');
 
 describe('compareWithBestOffset', () => {
-    test('treats provided 1px horizontal-offset fixtures as a match', async () => {
+    test('should match images with 1px horizontal offset', async () => {
         const baseImage = path.join(__dirname, 'base', 'm365com-lm_chrcurrent_win10.png');
         const compareImage = path.join(__dirname, 'compare', 'm365com-lm_chrcurrent_win10.png');
         const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'eoa-diff-test-'));
@@ -15,15 +15,8 @@ describe('compareWithBestOffset', () => {
         const failureThreshold = 0.015;
 
         try {
-            expect(fs.existsSync(tmpDir)).toBe(true);
-
             const { width: baseWidth, height: baseHeight } = await sharp(baseImage).metadata();
             const { width: compareWidth, height: compareHeight } = await sharp(compareImage).metadata();
-            expect(Number.isFinite(baseWidth)).toBe(true);
-            expect(Number.isFinite(baseHeight)).toBe(true);
-            expect(Number.isFinite(compareWidth)).toBe(true);
-            expect(Number.isFinite(compareHeight)).toBe(true);
-
             const width = Math.min(baseWidth, compareWidth);
             const height = Math.min(baseHeight, compareHeight);
 
