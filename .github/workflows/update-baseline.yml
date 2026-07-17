@@ -34,8 +34,9 @@ jobs:
             echo "::error::Invalid client_id: must contain only alphanumeric characters, hyphens, and underscores"
             exit 1
           fi
-          if [[ ! "${{ inputs.eoa_url }}" =~ ^https://[a-zA-Z0-9-]+\.github\.io/ ]]; then
-            echo "::error::Invalid eoa_url: must start with https://<org>.github.io/"
+          expected_prefix="https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}/"
+          if [[ ! "${{ inputs.eoa_url }}" == "${expected_prefix}"* ]]; then
+            echo "::error::eoa_url must start with ${expected_prefix}"
             exit 1
           fi
 
@@ -62,7 +63,19 @@ jobs:
         run: |
           image_url="${{ inputs.eoa_url }}compare/${{ inputs.client_id }}.png"
           echo "Downloading ${image_url}"
-          curl -fsSL "${image_url}" -o "output/${{ inputs.client_id }}.png"
+          content_type=$(curl -fsSL "${image_url}" \
+            -o "output/${{ inputs.client_id }}.png" \
+            -w '%{content_type}')
+          if [[ "${content_type}" != image/png* ]]; then
+            echo "::error::Unexpected content type '${content_type}'; expected image/png"
+            rm -f "output/${{ inputs.client_id }}.png"
+            exit 1
+          fi
+          if ! file "output/${{ inputs.client_id }}.png" | grep -q 'PNG image'; then
+            echo "::error::Downloaded file is not a valid PNG image"
+            rm -f "output/${{ inputs.client_id }}.png"
+            exit 1
+          fi
 
       - name: Commit and push updated baseline
         run: |

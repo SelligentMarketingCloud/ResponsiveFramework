@@ -16,7 +16,13 @@
         if (typeof url === 'string' &&
             url === '/api/reports' &&
             options && String(options.method || '').toUpperCase() === 'PUT') {
-            return handleUpdate(JSON.parse(options.body))
+            var payload;
+            try {
+                payload = JSON.parse(options.body);
+            } catch (e) {
+                return Promise.reject(new Error('Unexpected update payload: ' + e.message));
+            }
+            return handleUpdate(payload)
                 .then(function () { return new Response('', { status: 200 }); });
         }
         return originalFetch(url, options);
@@ -47,7 +53,11 @@
             for (var j = 0; j < suite.tests.length; j++) {
                 var test = suite.tests[j];
                 if (test.name === name && test.specFilename) {
-                    return test.specFilename.replace(/\.png$/i, '');
+                    // Strip the .png extension to get the client ID used as the filename.
+                    var filename = test.specFilename;
+                    return /\.png$/i.test(filename)
+                        ? filename.slice(0, -4)
+                        : filename;
                 }
             }
         }
@@ -58,6 +68,10 @@
         var cached = sessionStorage.getItem(TOKEN_KEY);
         if (cached) return Promise.resolve(cached);
         return promptForToken();
+    }
+
+    function clearToken() {
+        sessionStorage.removeItem(TOKEN_KEY);
     }
 
     function promptForToken() {
@@ -82,7 +96,7 @@
         return originalFetch(apiUrl, {
             method: 'POST',
             headers: {
-                'Authorization': 'Bearer ' + token,
+                'Authorization': 'token ' + token,
                 'Content-Type': 'application/json',
                 'Accept': 'application/vnd.github+json',
                 'X-GitHub-Api-Version': '2022-11-28'
@@ -97,6 +111,11 @@
             })
         }).then(function (res) {
             if (res.status === 204) return; // success – GitHub returns 204 No Content
+            if (res.status === 401) {
+                // Token is invalid or revoked – clear it so the next attempt re-prompts.
+                clearToken();
+                throw new Error('GitHub token is invalid or expired. Please try again.');
+            }
             return res.text().then(function (body) {
                 throw new Error('Workflow dispatch failed (' + res.status + '): ' + body);
             });

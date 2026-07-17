@@ -27,9 +27,18 @@ const path = require('path');
 // ---------------------------------------------------------------------------
 const args = process.argv.slice(2);
 const parsed = {};
-for (let i = 0; i < args.length - 1; i += 2) {
-    const key = args[i].replace(/^--/, '');
-    parsed[key] = args[i + 1];
+for (let i = 0; i < args.length; i++) {
+    const arg = args[i];
+    if (!arg.startsWith('--')) {
+        console.error('Expected a flag starting with "--", got: ' + arg);
+        process.exit(1);
+    }
+    const key = arg.slice(2);
+    if (i + 1 >= args.length || args[i + 1].startsWith('--')) {
+        console.error('Flag --' + key + ' requires a value');
+        process.exit(1);
+    }
+    parsed[key] = args[++i];
 }
 
 const required = ['owner', 'repo', 'pr-number', 'branch', 'eoa-url', 'default-branch'];
