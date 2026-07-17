@@ -4,17 +4,14 @@ const os = require('os');
 const path = require('path');
 const sharp = require('sharp');
 
-async function getCroppedImages(clientId) {
+async function normalizeImagePair(baseImage, compareImage, options = {}) {
+    const {
+        baseOutputPath = baseImage,
+        compareOutputPath = compareImage,
+    } = options;
 
-    const baseImage = `../diff/base/${clientId}.png`;
-    const compareImage = `../diff/compare/${clientId}.png`;
-
-    if (!fs.existsSync(baseImage) ||
-        !fs.existsSync(compareImage)) {
-        return {
-            baseImage,
-            compareImage
-        };
+    if (!fs.existsSync(baseImage) || !fs.existsSync(compareImage)) {
+        return { baseImage, compareImage };
     }
 
     const baseSharp = sharp(baseImage);
@@ -24,28 +21,37 @@ async function getCroppedImages(clientId) {
     const width = Math.min(baseWidth, compareWidth);
     const height = Math.min(baseHeight, compareHeight);
 
-    let baseCrop = '';
+    let normalizedBaseImage = baseImage;
     if (baseWidth > width || baseHeight > height) {
-        const left = Math.floor((baseWidth - width) / 2);
         await baseSharp
-            .extract({ left, top: 0, width, height })
-            .toFile(`../diff/base/${clientId}_cropped.png`);
-        baseCrop = '_cropped';
+            .extract({ left: Math.floor((baseWidth - width) / 2), top: 0, width, height })
+            .toFile(baseOutputPath);
+        normalizedBaseImage = baseOutputPath;
     }
 
-    let compareCrop = '';
+    let normalizedCompareImage = compareImage;
     if (compareWidth > width || compareHeight > height) {
-        const left = Math.floor((compareWidth - width) / 2);
         await compareSharp
-            .extract({ left, top: 0, width, height })
-            .toFile(`../diff/compare/${clientId}_cropped.png`);
-        compareCrop = '_cropped';
+            .extract({ left: Math.floor((compareWidth - width) / 2), top: 0, width, height })
+            .toFile(compareOutputPath);
+        normalizedCompareImage = compareOutputPath;
     }
-    
+
     return {
-        baseImage: `../diff/base/${clientId}${baseCrop}.png`,
-        compareImage: `../diff/compare/${clientId}${compareCrop}.png`
+        baseImage: normalizedBaseImage,
+        compareImage: normalizedCompareImage,
     };
+}
+
+async function getCroppedImages(clientId) {
+
+    const baseImage = `../diff/base/${clientId}.png`;
+    const compareImage = `../diff/compare/${clientId}.png`;
+
+    return normalizeImagePair(baseImage, compareImage, {
+        baseOutputPath: `../diff/base/${clientId}_cropped.png`,
+        compareOutputPath: `../diff/compare/${clientId}_cropped.png`,
+    });
 }
 
 async function compareWithBestOffset(baseImage, compareImage, diffImage, failureThreshold) {
@@ -232,4 +238,5 @@ if (require.main === module) {
 
 module.exports = {
     compareWithBestOffset,
+    normalizeImagePair,
 };
