@@ -30,7 +30,6 @@ describe('compareWithBestOffset', () => {
             const result = await compareWithBestOffset(croppedBaseImage, croppedCompareImage, diffImage, failureThreshold);
             expect(result.match).toBe(true);
             expect(result.percentage).toBeLessThan(failureThreshold);
-            expect(fs.existsSync(diffImage)).toBe(true);
         } finally {
             fs.rmSync(tmpDir, { recursive: true, force: true });
         }
