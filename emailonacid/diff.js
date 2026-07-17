@@ -220,10 +220,16 @@ async function run() {
     }
 }
 
-(async () => {
-    const result = await run();
+if (require.main === module) {
+    (async () => {
+        const result = await run();
 
-    const jsonResult = JSON.stringify(result, null, 2);
+        const jsonResult = JSON.stringify(result, null, 2);
 
-    fs.writeFileSync('../diff/result.json', jsonResult);
-})();
+        fs.writeFileSync('../diff/result.json', jsonResult);
+    })();
+}
+
+module.exports = {
+    compareWithBestOffset,
+};
