@@ -15,8 +15,15 @@ describe('compareWithBestOffset', () => {
         const failureThreshold = 0.015;
 
         try {
+            expect(fs.existsSync(tmpDir)).toBe(true);
+
             const { width: baseWidth, height: baseHeight } = await sharp(baseImage).metadata();
             const { width: compareWidth, height: compareHeight } = await sharp(compareImage).metadata();
+            expect(Number.isFinite(baseWidth)).toBe(true);
+            expect(Number.isFinite(baseHeight)).toBe(true);
+            expect(Number.isFinite(compareWidth)).toBe(true);
+            expect(Number.isFinite(compareHeight)).toBe(true);
+
             const width = Math.min(baseWidth, compareWidth);
             const height = Math.min(baseHeight, compareHeight);
 
@@ -30,6 +37,7 @@ describe('compareWithBestOffset', () => {
             const result = await compareWithBestOffset(croppedBaseImage, croppedCompareImage, diffImage, failureThreshold);
             expect(result.match).toBe(true);
             expect(result.percentage).toBeLessThan(failureThreshold);
+            expect(fs.existsSync(diffImage)).toBe(true);
         } finally {
             fs.rmSync(tmpDir, { recursive: true, force: true });
         }
