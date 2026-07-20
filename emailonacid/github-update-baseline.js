@@ -151,11 +151,11 @@
 
     function arrayBufferToHex(buffer) {
         var bytes = new Uint8Array(buffer);
-        var hex = '';
+        var parts = new Array(bytes.length);
         for (var i = 0; i < bytes.length; i++) {
-            hex += ('0' + bytes[i].toString(16)).slice(-2);
+            parts[i] = ('0' + bytes[i].toString(16)).slice(-2);
         }
-        return hex;
+        return parts.join('');
     }
 
     function buildLfsPointer(sha256, size) {
