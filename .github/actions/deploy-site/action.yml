@@ -134,7 +134,18 @@ runs:
           exit 0
         fi
         git commit -m "pages: deploy from workflow run ${{ github.run_id }}"
-        git push origin HEAD:gh-pages
+        for i in 1 2 3; do
+          if git push origin HEAD:gh-pages; then
+            break
+          fi
+          if [ "$i" -eq 3 ]; then
+            echo "Push failed after $i attempts" >&2
+            exit 1
+          fi
+          echo "Push rejected (attempt $i); rebasing on latest gh-pages and retrying..."
+          git fetch origin gh-pages
+          git rebase origin/gh-pages
+        done
 
     - name: Deploy to GitHub Pages
       if: ${{ inputs.deploy == 'true' }}
