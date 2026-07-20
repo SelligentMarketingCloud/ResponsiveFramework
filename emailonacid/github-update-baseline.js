@@ -155,15 +155,26 @@
         createLink.textContent = 'Create a token on GitHub \u2197';
         createLink.style.cssText = 'display:block;font-size:0.85rem;margin-bottom:16px;color:#0969da;';
 
+        var inputId = 'eoa-pat-input';
+
+        var label = document.createElement('label');
+        label.htmlFor = inputId;
+        label.textContent = 'Personal Access Token';
+        label.style.cssText = 'display:block;text-align:left;font-size:0.85rem;font-weight:600;margin-bottom:4px;color:#24292f;';
+
         var input = document.createElement('input');
         input.type = 'password';
+        input.id = inputId;
         input.placeholder = 'ghp_…';
         input.style.cssText = [
             'display:block', 'width:100%', 'box-sizing:border-box',
             'border:1px solid #d0d7de', 'border-radius:6px',
-            'padding:8px 12px', 'font-size:0.95rem', 'margin-bottom:16px',
+            'padding:8px 12px', 'font-size:0.95rem', 'margin-bottom:4px',
             'font-family:monospace',
         ].join(';');
+
+        var errorMsg = document.createElement('p');
+        errorMsg.style.cssText = 'color:#cf222e;font-size:0.8rem;margin:0 0 12px;min-height:1em;text-align:left;';
 
         var buttonRow = document.createElement('div');
         buttonRow.style.cssText = 'display:flex;gap:8px;justify-content:center;';
@@ -186,8 +197,18 @@
 
         function submit() {
             var token = input.value.trim();
+            if (!token) {
+                errorMsg.textContent = 'Please enter a token.';
+                input.focus();
+                return;
+            }
+            if (!/^(ghp_|github_pat_)/.test(token)) {
+                errorMsg.textContent = 'Token must start with ghp_ (classic) or github_pat_ (fine-grained).';
+                input.focus();
+                return;
+            }
             overlay.parentNode.removeChild(overlay);
-            callback(token || null);
+            callback(token);
         }
 
         function cancel() {
@@ -204,7 +225,7 @@
 
         buttonRow.appendChild(confirmBtn);
         buttonRow.appendChild(cancelBtn);
-        [heading, instructions, createLink, input, buttonRow].forEach(function (el) {
+        [heading, instructions, createLink, label, input, errorMsg, buttonRow].forEach(function (el) {
             box.appendChild(el);
         });
         overlay.appendChild(box);
