@@ -42,6 +42,7 @@ jobs:
             const pr = prs.data.find(pr => pr.head.sha === context.payload.workflow_run.head_sha);
             if (pr) {
               core.setOutput('number', pr.number);
+              core.setOutput('branch', pr.head.ref);
             }
       - name: 📄 Checkout main branch
         uses: actions/checkout@v5
@@ -97,6 +98,15 @@ jobs:
         if: success() || steps.compare-screenshots.conclusion == 'failure'
         run: npm run report-ci
         working-directory: ./emailonacid
+      - name: Inject PR info into EOA report
+        if: steps.pr-info.outputs.number != '' && (success() || steps.compare-screenshots.conclusion == 'failure')
+        run: |
+          node emailonacid/inject-pr-info.js \
+            --owner '${{ github.repository_owner }}' \
+            --repo '${{ github.event.repository.name }}' \
+            --pr-number '${{ steps.pr-info.outputs.number }}' \
+            --branch '${{ steps.pr-info.outputs.branch }}' \
+            --eoa-url '${{ steps.variables.outputs.EOA_URL }}'
       - name: Fail if there are visual differences
         id: check-diff
         run: |
