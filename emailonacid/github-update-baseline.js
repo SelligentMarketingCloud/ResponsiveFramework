@@ -1,13 +1,18 @@
 // Injected into the static EOA diff report to enable updating baselines directly
 // from the browser. Intercepts the built-in "Update" button's API call,
-// authenticates the user via the GitHub OAuth Device Flow (no PAT required),
+// authenticates the user via a GitHub Personal Access Token (PAT) prompt,
 // then fires a repository_dispatch event that triggers a pipeline job to perform
 // the actual Git LFS update – bypassing browser CORS restrictions on the LFS
 // endpoint.
 //
+// The GitHub OAuth Device Flow cannot be used here because the GitHub OAuth
+// endpoints (github.com/login/device/code, github.com/login/oauth/access_token)
+// do not include CORS headers, causing browsers to block those requests.
+// A PAT entered directly by the user avoids this entirely.
+//
 // Flow for each "Update" click:
 //   1. Resolve the clientId from the report's injected data.
-//   2. Obtain a GitHub OAuth token via the Device Flow (cached in sessionStorage).
+//   2. Prompt the user for a GitHub Personal Access Token (cached in sessionStorage).
 //   3. POST a repository_dispatch event to the GitHub API (CORS-enabled) with the
 //      clientId, branch, and compare image URL as the payload.
 //   4. The triggered workflow fetches the compare image and pushes the updated
@@ -75,106 +80,45 @@
     }
 
     // -------------------------------------------------------------------------
-    // Token management – GitHub OAuth Device Flow
+    // Token management – GitHub Personal Access Token prompt
+    //
+    // The GitHub OAuth Device Flow cannot be used here because the required
+    // endpoints (github.com/login/device/code, github.com/login/oauth/access_token)
+    // do not include CORS headers, causing browsers to block those requests.
+    // Instead the user supplies a PAT directly; only api.github.com is then
+    // called, which does support CORS.
     // -------------------------------------------------------------------------
 
     function getToken() {
         var cached = sessionStorage.getItem(TOKEN_KEY);
         if (cached) return Promise.resolve(cached);
-        if (!config.oauthClientId) {
-            return Promise.reject(new Error(
-                'No OAuth client ID configured. Set the EOA_OAUTH_CLIENT_ID ' +
-                'repository variable to the GitHub OAuth App client ID.'
-            ));
-        }
-        return runDeviceFlow(config.oauthClientId);
+        return promptForToken();
     }
 
     function clearToken() {
         sessionStorage.removeItem(TOKEN_KEY);
     }
 
-    function runDeviceFlow(clientId) {
-        // Step 1: request a device + user code from GitHub.
-        return originalFetch('https://github.com/login/device/code', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Accept': 'application/json',
-            },
-            body: JSON.stringify({ client_id: clientId, scope: 'repo' }),
-        }).then(function (res) {
-            if (!res.ok) {
-                return res.text().then(function (body) {
-                    throw new Error('Device flow initiation failed (' + res.status + '): ' + body);
-                });
-            }
-            return res.json();
-        }).then(function (data) {
-            // Step 2: show the user the one-time code and open the activation page.
-            showDeviceFlowModal(
-                data.user_code,
-                data.verification_uri || 'https://github.com/activate'
-            );
-            // Step 3: poll until the user completes authorization.
-            return pollForToken(clientId, data.device_code, (data.interval || 5) * 1000);
-        });
-    }
-
-    function pollForToken(clientId, deviceCode, pollInterval) {
+    function promptForToken() {
         return new Promise(function (resolve, reject) {
-            function poll() {
-                originalFetch('https://github.com/login/oauth/access_token', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Accept': 'application/json',
-                    },
-                    body: JSON.stringify({
-                        client_id: clientId,
-                        device_code: deviceCode,
-                        grant_type: 'urn:ietf:params:oauth:grant-type:device_code',
-                    }),
-                }).then(function (res) {
-                    return res.json();
-                }).then(function (data) {
-                    if (data.access_token) {
-                        closeDeviceFlowModal();
-                        sessionStorage.setItem(TOKEN_KEY, data.access_token);
-                        resolve(data.access_token);
-                    } else if (data.error === 'authorization_pending') {
-                        setTimeout(poll, pollInterval);
-                    } else if (data.error === 'slow_down') {
-                        // Server asked us to back off; add 5 s on top of the current interval.
-                        pollInterval += 5000;
-                        setTimeout(poll, pollInterval);
-                    } else if (data.error === 'expired_token') {
-                        closeDeviceFlowModal();
-                        reject(new Error('Device code expired. Please click Update again.'));
-                    } else if (data.error === 'access_denied') {
-                        closeDeviceFlowModal();
-                        reject(new Error('Authorization was denied.'));
-                    } else {
-                        closeDeviceFlowModal();
-                        reject(new Error('OAuth error: ' + (data.error_description || data.error)));
-                    }
-                }).catch(function (err) {
-                    closeDeviceFlowModal();
-                    reject(err);
-                });
-            }
-
-            poll();
+            showTokenModal(function (token) {
+                if (!token) {
+                    reject(new Error('GitHub authentication cancelled.'));
+                    return;
+                }
+                sessionStorage.setItem(TOKEN_KEY, token);
+                resolve(token);
+            });
         });
     }
 
     // -------------------------------------------------------------------------
-    // Device Flow modal UI
+    // PAT prompt modal UI
     // -------------------------------------------------------------------------
 
-    var MODAL_ID = 'eoa-device-flow-modal';
+    var MODAL_ID = 'eoa-pat-modal';
 
-    function showDeviceFlowModal(userCode, verificationUri) {
+    function showTokenModal(callback) {
         var existing = document.getElementById(MODAL_ID);
         if (existing) existing.parentNode.removeChild(existing);
 
@@ -189,52 +133,83 @@
         var box = document.createElement('div');
         box.style.cssText = [
             'background:#fff', 'border-radius:8px', 'padding:32px 40px',
-            'max-width:400px', 'width:90%', 'text-align:center',
+            'max-width:440px', 'width:90%', 'text-align:center',
             'font-family:system-ui,sans-serif', 'box-shadow:0 4px 32px rgba(0,0,0,0.3)',
         ].join(';');
 
         var heading = document.createElement('h2');
-        heading.textContent = 'Authorize GitHub';
+        heading.textContent = 'GitHub Authorization Required';
         heading.style.cssText = 'margin:0 0 12px;font-size:1.2rem;';
 
         var instructions = document.createElement('p');
-        instructions.style.cssText = 'margin:0 0 20px;color:#444;font-size:0.95rem;line-height:1.5;';
-        instructions.textContent =
-            'Open the link below and enter this code to authorize the baseline update:';
+        instructions.style.cssText = 'margin:0 0 16px;color:#444;font-size:0.95rem;line-height:1.5;text-align:left;';
+        instructions.innerHTML =
+            'Enter a GitHub Personal Access Token with the <code>repo</code> scope ' +
+            'to authorize the baseline update. The token is stored only in your ' +
+            'browser session and is never sent to any server other than GitHub.';
 
-        var codeEl = document.createElement('div');
-        codeEl.textContent = userCode;
-        codeEl.style.cssText = [
-            'font-size:2rem', 'font-weight:bold', 'letter-spacing:0.15em',
-            'font-family:monospace', 'background:#f0f4f8', 'border-radius:6px',
-            'padding:12px', 'margin:0 0 20px', 'user-select:all',
+        var createLink = document.createElement('a');
+        createLink.href = 'https://github.com/settings/tokens/new?scopes=repo&description=EOA+baseline+update';
+        createLink.target = '_blank';
+        createLink.rel = 'noopener noreferrer';
+        createLink.textContent = 'Create a token on GitHub \u2197';
+        createLink.style.cssText = 'display:block;font-size:0.85rem;margin-bottom:16px;color:#0969da;';
+
+        var input = document.createElement('input');
+        input.type = 'password';
+        input.placeholder = 'ghp_…';
+        input.style.cssText = [
+            'display:block', 'width:100%', 'box-sizing:border-box',
+            'border:1px solid #d0d7de', 'border-radius:6px',
+            'padding:8px 12px', 'font-size:0.95rem', 'margin-bottom:16px',
+            'font-family:monospace',
         ].join(';');
 
-        var link = document.createElement('a');
-        link.href = verificationUri;
-        link.target = '_blank';
-        link.rel = 'noopener noreferrer';
-        link.textContent = 'Open GitHub Authorization Page';
-        link.style.cssText = [
-            'display:inline-block', 'background:#238636', 'color:#fff',
-            'text-decoration:none', 'border-radius:6px', 'padding:10px 20px',
-            'font-size:0.95rem', 'margin-bottom:16px',
+        var buttonRow = document.createElement('div');
+        buttonRow.style.cssText = 'display:flex;gap:8px;justify-content:center;';
+
+        var confirmBtn = document.createElement('button');
+        confirmBtn.textContent = 'Authorize';
+        confirmBtn.style.cssText = [
+            'background:#238636', 'color:#fff', 'border:none',
+            'border-radius:6px', 'padding:8px 20px',
+            'font-size:0.95rem', 'cursor:pointer',
         ].join(';');
 
-        var status = document.createElement('p');
-        status.style.cssText = 'color:#666;font-size:0.85rem;margin:0;';
-        status.textContent = 'Waiting for authorization...';
+        var cancelBtn = document.createElement('button');
+        cancelBtn.textContent = 'Cancel';
+        cancelBtn.style.cssText = [
+            'background:#f6f8fa', 'color:#24292f', 'border:1px solid #d0d7de',
+            'border-radius:6px', 'padding:8px 20px',
+            'font-size:0.95rem', 'cursor:pointer',
+        ].join(';');
 
-        [heading, instructions, codeEl, link, status].forEach(function (el) {
+        function submit() {
+            var token = input.value.trim();
+            overlay.parentNode.removeChild(overlay);
+            callback(token || null);
+        }
+
+        function cancel() {
+            overlay.parentNode.removeChild(overlay);
+            callback(null);
+        }
+
+        confirmBtn.addEventListener('click', submit);
+        cancelBtn.addEventListener('click', cancel);
+        input.addEventListener('keydown', function (e) {
+            if (e.key === 'Enter') submit();
+            if (e.key === 'Escape') cancel();
+        });
+
+        buttonRow.appendChild(confirmBtn);
+        buttonRow.appendChild(cancelBtn);
+        [heading, instructions, createLink, input, buttonRow].forEach(function (el) {
             box.appendChild(el);
         });
         overlay.appendChild(box);
         document.body.appendChild(overlay);
-    }
-
-    function closeDeviceFlowModal() {
-        var el = document.getElementById(MODAL_ID);
-        if (el) el.parentNode.removeChild(el);
+        input.focus();
     }
 
     // -------------------------------------------------------------------------
@@ -275,7 +250,7 @@
             if (res.status === 403) {
                 throw new Error(
                     'Token lacks permission to dispatch workflows. ' +
-                    'Ensure the authorized OAuth App has the "repo" scope.'
+                    'Ensure the Personal Access Token has the "repo" scope.'
                 );
             }
             if (!res.ok) {
