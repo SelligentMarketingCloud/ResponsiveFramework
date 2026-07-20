@@ -113,8 +113,24 @@ function validateRequest(body, env) {
     return 'Invalid branch';
   }
 
-  const expectedPrefix = `https://${env.ALLOWED_OWNER}.github.io/${env.ALLOWED_REPO}/`;
-  if (typeof compareUrl !== 'string' || !compareUrl.startsWith(expectedPrefix) || compareUrl.includes('..')) {
+  if (typeof compareUrl !== 'string') {
+    return 'Invalid compareUrl';
+  }
+
+  let parsedCompareUrl;
+  try {
+    parsedCompareUrl = new URL(compareUrl);
+  } catch {
+    return 'Invalid compareUrl';
+  }
+
+  const expectedHost = `${env.ALLOWED_OWNER}.github.io`;
+  const expectedPathPrefix = `/${env.ALLOWED_REPO}/`;
+  const hasExpectedLocation =
+    parsedCompareUrl.protocol === 'https:' &&
+    parsedCompareUrl.hostname === expectedHost &&
+    parsedCompareUrl.pathname.startsWith(expectedPathPrefix);
+  if (!hasExpectedLocation || compareUrl.includes('..')) {
     return 'Invalid compareUrl';
   }
 
@@ -156,7 +172,7 @@ async function createAppJwt(appId, privateKeyPem) {
   const now = Math.floor(Date.now() / 1000);
   const header = { alg: 'RS256', typ: 'JWT' };
   const payload = {
-    // Backdate iat slightly to tolerate small clock differences between systems.
+    // Backdate by 60s to tolerate small clock differences between systems.
     iat: now - 60,
     exp: now + 9 * 60,
     iss: appId,
@@ -184,7 +200,12 @@ async function importPrivateKey(pem) {
     .replace('-----END PRIVATE KEY-----', '')
     .replace(/\s+/g, '');
 
-  const binaryDer = Uint8Array.from(atob(cleanPem), c => c.charCodeAt(0));
+  let binaryDer;
+  try {
+    binaryDer = Uint8Array.from(atob(cleanPem), c => c.charCodeAt(0));
+  } catch {
+    throw new Error('Invalid GITHUB_APP_PRIVATE_KEY_PEM format');
+  }
 
   return crypto.subtle.importKey(
     'pkcs8',
