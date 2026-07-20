@@ -1,9 +1,9 @@
 name: Update EOA Baseline
 
 # Triggered by the browser-side EOA diff report when a user clicks "Update"
-# after providing a GitHub Personal Access Token. The browser cannot call
-# the Git LFS endpoint directly (no CORS headers), so it dispatches this event
-# instead and lets the pipeline perform the Git LFS operations.
+# through a server-side GitHub App proxy. The browser cannot call the Git LFS
+# endpoint directly (no CORS headers), so it dispatches this event instead and
+# lets the pipeline perform the Git LFS operations.
 
 on:
   repository_dispatch:

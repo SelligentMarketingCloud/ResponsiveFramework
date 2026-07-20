@@ -1,29 +1,23 @@
 // Injected into the static EOA diff report to enable updating baselines directly
-// from the browser. Intercepts the built-in "Update" button's API call,
-// authenticates the user via a GitHub Personal Access Token (PAT) prompt,
-// then fires a repository_dispatch event that triggers a pipeline job to perform
-// the actual Git LFS update – bypassing browser CORS restrictions on the LFS
-// endpoint.
+// from the browser. Intercepts the built-in "Update" button's API call and
+// forwards the update request to a CORS-enabled proxy endpoint.
 //
-// The GitHub OAuth Device Flow cannot be used here because the GitHub OAuth
-// endpoints (github.com/login/device/code, github.com/login/oauth/access_token)
-// do not include CORS headers, causing browsers to block those requests.
-// A PAT entered directly by the user avoids this entirely.
+// The proxy is expected to run server-side (e.g. Cloudflare Worker), authenticate
+// as a GitHub App installation, and dispatch the workflow event to GitHub.
+// This avoids exposing PATs/secrets in the browser and avoids GitHub OAuth CORS
+// limitations on github.com/login/* endpoints.
 //
 // Flow for each "Update" click:
 //   1. Resolve the clientId from the report's injected data.
-//   2. Prompt the user for a GitHub Personal Access Token (cached in sessionStorage).
-//   3. POST a repository_dispatch event to the GitHub API (CORS-enabled) with the
-//      clientId, branch, and compare image URL as the payload.
-//   4. The triggered workflow fetches the compare image and pushes the updated
-//      LFS-tracked baseline file using the built-in GITHUB_TOKEN.
+//   2. POST request details to the configured proxy endpoint.
+//   3. Proxy dispatches `eoa-update-baseline` to GitHub using an installation token.
+//   4. Workflow fetches compare image and pushes the updated baseline.
 (function () {
     'use strict';
 
     var config = window.__eoa_config__;
     if (!config || !config.prNumber) return;
 
-    var TOKEN_KEY = 'eoa_gh_token';
     var originalFetch = window.fetch.bind(window);
 
     // Intercept the report library's PUT /api/reports call that backs "Update".
@@ -51,10 +45,7 @@
                 '", test "' + payload.name + '"'
             ));
         }
-        return getToken().then(function (token) {
-            if (!token) throw new Error('GitHub authentication cancelled.');
-            return dispatchUpdate(token, clientId);
-        });
+        return dispatchUpdateViaProxy(clientId);
     }
 
     // Walk the injected report data to find the specFilename for the given
@@ -80,212 +71,55 @@
     }
 
     // -------------------------------------------------------------------------
-    // Token management – GitHub Personal Access Token prompt
-    //
-    // The GitHub OAuth Device Flow cannot be used here because the required
-    // endpoints (github.com/login/device/code, github.com/login/oauth/access_token)
-    // do not include CORS headers, causing browsers to block those requests.
-    // Instead the user supplies a PAT directly; only api.github.com is then
-    // called, which does support CORS.
+    // Dispatch the update through a GitHub App proxy endpoint
     // -------------------------------------------------------------------------
 
-    function getToken() {
-        var cached = sessionStorage.getItem(TOKEN_KEY);
-        if (cached) return Promise.resolve(cached);
-        return promptForToken();
-    }
+    function dispatchUpdateViaProxy(clientId) {
+        var proxyUrl = config.githubAppProxyUrl;
+        if (!proxyUrl) {
+            return Promise.reject(new Error(
+                'GitHub App proxy URL is not configured. Set EOA_GITHUB_APP_PROXY_URL repository variable.'
+            ));
+        }
 
-    function clearToken() {
-        sessionStorage.removeItem(TOKEN_KEY);
-    }
+        var requestPayload = {
+            owner: config.owner,
+            repo: config.repo,
+            event_type: 'eoa-update-baseline',
+            client_payload: {
+                clientId: clientId,
+                prNumber: config.prNumber,
+                branch: config.branch,
+                compareUrl: config.eoaUrl + 'compare/' + clientId + '.png',
+            },
+        };
 
-    function promptForToken() {
-        return new Promise(function (resolve, reject) {
-            showTokenModal(function (token) {
-                if (!token) {
-                    reject(new Error('GitHub authentication cancelled.'));
-                    return;
+        return originalFetch(proxyUrl, {
+            method: 'POST',
+            mode: 'cors',
+            headers: {
+                'Content-Type': 'application/json',
+                'Accept': 'application/json',
+            },
+            body: JSON.stringify(requestPayload),
+        }).then(function (res) {
+            return readBody(res).then(function (body) {
+                if (!res.ok) {
+                    var message = body && body.message ? body.message : body && body.raw ? body.raw : 'Unknown error';
+                    throw new Error('Proxy dispatch failed (' + res.status + '): ' + message);
                 }
-                sessionStorage.setItem(TOKEN_KEY, token);
-                resolve(token);
             });
         });
     }
 
-    // -------------------------------------------------------------------------
-    // PAT prompt modal UI
-    // -------------------------------------------------------------------------
-
-    var MODAL_ID = 'eoa-pat-modal';
-
-    function showTokenModal(callback) {
-        var existing = document.getElementById(MODAL_ID);
-        if (existing) existing.parentNode.removeChild(existing);
-
-        var overlay = document.createElement('div');
-        overlay.id = MODAL_ID;
-        overlay.style.cssText = [
-            'position:fixed', 'inset:0', 'z-index:9999',
-            'display:flex', 'align-items:center', 'justify-content:center',
-            'background:rgba(0,0,0,0.6)',
-        ].join(';');
-
-        var box = document.createElement('div');
-        box.style.cssText = [
-            'background:#fff', 'border-radius:8px', 'padding:32px 40px',
-            'max-width:440px', 'width:90%', 'text-align:center',
-            'font-family:system-ui,sans-serif', 'box-shadow:0 4px 32px rgba(0,0,0,0.3)',
-        ].join(';');
-
-        var heading = document.createElement('h2');
-        heading.textContent = 'GitHub Authorization Required';
-        heading.style.cssText = 'margin:0 0 12px;font-size:1.2rem;';
-
-        var instructions = document.createElement('p');
-        instructions.style.cssText = 'margin:0 0 16px;color:#444;font-size:0.95rem;line-height:1.5;text-align:left;';
-        instructions.innerHTML =
-            'Enter a GitHub Personal Access Token with the <code>repo</code> scope ' +
-            'to authorize the baseline update. The token is stored only in your ' +
-            'browser session and is never sent to any server other than GitHub.';
-
-        var createLink = document.createElement('a');
-        createLink.href = 'https://github.com/settings/tokens/new?scopes=repo&description=EOA+baseline+update';
-        createLink.target = '_blank';
-        createLink.rel = 'noopener noreferrer';
-        createLink.textContent = 'Create a token on GitHub \u2197';
-        createLink.style.cssText = 'display:block;font-size:0.85rem;margin-bottom:16px;color:#0969da;';
-
-        var inputId = 'eoa-pat-input';
-
-        var label = document.createElement('label');
-        label.htmlFor = inputId;
-        label.textContent = 'Personal Access Token';
-        label.style.cssText = 'display:block;text-align:left;font-size:0.85rem;font-weight:600;margin-bottom:4px;color:#24292f;';
-
-        var input = document.createElement('input');
-        input.type = 'password';
-        input.id = inputId;
-        input.placeholder = 'ghp_…';
-        input.style.cssText = [
-            'display:block', 'width:100%', 'box-sizing:border-box',
-            'border:1px solid #d0d7de', 'border-radius:6px',
-            'padding:8px 12px', 'font-size:0.95rem', 'margin-bottom:4px',
-            'font-family:monospace',
-        ].join(';');
-
-        var errorMsg = document.createElement('p');
-        errorMsg.style.cssText = 'color:#cf222e;font-size:0.8rem;margin:0 0 12px;min-height:1em;text-align:left;';
-
-        var buttonRow = document.createElement('div');
-        buttonRow.style.cssText = 'display:flex;gap:8px;justify-content:center;';
-
-        var confirmBtn = document.createElement('button');
-        confirmBtn.textContent = 'Authorize';
-        confirmBtn.style.cssText = [
-            'background:#238636', 'color:#fff', 'border:none',
-            'border-radius:6px', 'padding:8px 20px',
-            'font-size:0.95rem', 'cursor:pointer',
-        ].join(';');
-
-        var cancelBtn = document.createElement('button');
-        cancelBtn.textContent = 'Cancel';
-        cancelBtn.style.cssText = [
-            'background:#f6f8fa', 'color:#24292f', 'border:1px solid #d0d7de',
-            'border-radius:6px', 'padding:8px 20px',
-            'font-size:0.95rem', 'cursor:pointer',
-        ].join(';');
-
-        function submit() {
-            var token = input.value.trim();
-            if (!token) {
-                errorMsg.textContent = 'Please enter a token.';
-                input.focus();
-                return;
+    function readBody(res) {
+        return res.text().then(function (text) {
+            if (!text) return {};
+            try {
+                return JSON.parse(text);
+            } catch (e) {
+                return { raw: text };
             }
-            // Classic PATs are ghp_ + 36 chars (40 total); fine-grained are longer.
-            var classicValid = /^ghp_[A-Za-z0-9]{36,}$/.test(token);
-            var fineGrainedValid = /^github_pat_[A-Za-z0-9_]{20,}$/.test(token);
-            if (!classicValid && !fineGrainedValid) {
-                errorMsg.textContent =
-                    'Invalid token format. GitHub tokens must start with ghp_ (classic) ' +
-                    'or github_pat_ (fine-grained) and be the correct length.';
-                input.focus();
-                return;
-            }
-            overlay.parentNode.removeChild(overlay);
-            callback(token);
-        }
-
-        function cancel() {
-            overlay.parentNode.removeChild(overlay);
-            callback(null);
-        }
-
-        confirmBtn.addEventListener('click', submit);
-        cancelBtn.addEventListener('click', cancel);
-        input.addEventListener('keydown', function (e) {
-            if (e.key === 'Enter') submit();
-            if (e.key === 'Escape') cancel();
-        });
-
-        buttonRow.appendChild(confirmBtn);
-        buttonRow.appendChild(cancelBtn);
-        [heading, instructions, createLink, label, input, errorMsg, buttonRow].forEach(function (el) {
-            box.appendChild(el);
-        });
-        overlay.appendChild(box);
-        document.body.appendChild(overlay);
-        input.focus();
-    }
-
-    // -------------------------------------------------------------------------
-    // Dispatch the update to the pipeline via repository_dispatch
-    // -------------------------------------------------------------------------
-
-    function dispatchUpdate(token, clientId) {
-        var owner      = config.owner;
-        var repo       = config.repo;
-        var branch     = config.branch;
-        var compareUrl = config.eoaUrl + 'compare/' + clientId + '.png';
-
-        return originalFetch(
-            'https://api.github.com/repos/' + owner + '/' + repo + '/dispatches',
-            {
-                method: 'POST',
-                headers: {
-                    'Authorization':        'token ' + token,
-                    'Content-Type':         'application/json',
-                    'Accept':               'application/vnd.github+json',
-                    'X-GitHub-Api-Version': '2022-11-28',
-                },
-                body: JSON.stringify({
-                    event_type: 'eoa-update-baseline',
-                    client_payload: {
-                        clientId:   clientId,
-                        prNumber:   config.prNumber,
-                        branch:     branch,
-                        compareUrl: compareUrl,
-                    },
-                }),
-            }
-        ).then(function (res) {
-            if (res.status === 401) {
-                clearToken();
-                throw new Error('GitHub token is invalid or expired (401). Please try again.');
-            }
-            if (res.status === 403) {
-                throw new Error(
-                    'Token lacks permission to dispatch workflows. ' +
-                    'Ensure the Personal Access Token has the "repo" scope.'
-                );
-            }
-            if (!res.ok) {
-                return res.text().then(function (body) {
-                    throw new Error('Dispatch failed (' + res.status + '): ' + body);
-                });
-            }
-            // 204 No Content on success – the pipeline handles the rest.
         });
     }
 })();
-

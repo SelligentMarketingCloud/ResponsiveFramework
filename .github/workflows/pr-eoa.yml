@@ -100,13 +100,16 @@ jobs:
         working-directory: ./emailonacid
       - name: Inject PR info into EOA report
         if: steps.pr-info.outputs.number != '' && (success() || steps.compare-screenshots.conclusion == 'failure')
+        env:
+          EOA_GITHUB_APP_PROXY_URL: ${{ vars.EOA_GITHUB_APP_PROXY_URL }}
         run: |
           node emailonacid/inject-pr-info.js \
             --owner '${{ github.repository_owner }}' \
             --repo '${{ github.event.repository.name }}' \
             --pr-number '${{ steps.pr-info.outputs.number }}' \
             --branch '${{ steps.pr-info.outputs.branch }}' \
-            --eoa-url '${{ steps.variables.outputs.EOA_URL }}'
+            --eoa-url '${{ steps.variables.outputs.EOA_URL }}' \
+            ${EOA_GITHUB_APP_PROXY_URL:+--github-app-proxy-url "$EOA_GITHUB_APP_PROXY_URL"}
       - name: Fail if there are visual differences
         id: check-diff
         run: |

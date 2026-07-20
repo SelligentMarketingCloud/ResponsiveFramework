@@ -15,6 +15,7 @@
  *     --pr-number <number>    \
  *     --branch <head-branch>  \
  *     --eoa-url <pages-url>   \
+ *     [--github-app-proxy-url <url>] \
  *     [--html-path diff/index.html]
  */
 
@@ -56,6 +57,9 @@ const config = {
     prNumber: parseInt(parsed['pr-number'], 10),
     branch: parsed['branch'],
     eoaUrl: parsed['eoa-url'],
+    ...(parsed['github-app-proxy-url']
+        ? { githubAppProxyUrl: parsed['github-app-proxy-url'] }
+        : {}),
 };
 
 // ---------------------------------------------------------------------------
