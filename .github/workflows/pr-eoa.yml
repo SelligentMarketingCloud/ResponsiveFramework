@@ -106,8 +106,7 @@ jobs:
             --repo '${{ github.event.repository.name }}' \
             --pr-number '${{ steps.pr-info.outputs.number }}' \
             --branch '${{ steps.pr-info.outputs.branch }}' \
-            --eoa-url '${{ steps.variables.outputs.EOA_URL }}' \
-            --default-branch '${{ github.event.repository.default_branch }}'
+            --eoa-url '${{ steps.variables.outputs.EOA_URL }}'
       - name: Fail if there are visual differences
         id: check-diff
         run: |

@@ -15,7 +15,6 @@
  *     --pr-number <number>    \
  *     --branch <head-branch>  \
  *     --eoa-url <pages-url>   \
- *     --default-branch <main> \
  *     [--html-path diff/index.html]
  */
 
@@ -41,7 +40,7 @@ for (let i = 0; i < args.length; i++) {
     parsed[key] = args[++i];
 }
 
-const required = ['owner', 'repo', 'pr-number', 'branch', 'eoa-url', 'default-branch'];
+const required = ['owner', 'repo', 'pr-number', 'branch', 'eoa-url'];
 const missing = required.filter(k => !parsed[k]);
 if (missing.length) {
     console.error('Missing required arguments: ' + missing.map(k => '--' + k).join(', '));
@@ -57,7 +56,6 @@ const config = {
     prNumber: parseInt(parsed['pr-number'], 10),
     branch: parsed['branch'],
     eoaUrl: parsed['eoa-url'],
-    defaultBranch: parsed['default-branch'],
 };
 
 // ---------------------------------------------------------------------------
