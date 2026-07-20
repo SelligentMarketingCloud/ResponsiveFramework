@@ -202,8 +202,13 @@
                 input.focus();
                 return;
             }
-            if (!/^(ghp_|github_pat_)/.test(token)) {
-                errorMsg.textContent = 'Token must start with ghp_ (classic) or github_pat_ (fine-grained).';
+            // Classic PATs are ghp_ + 36 chars (40 total); fine-grained are longer.
+            var classicValid = /^ghp_[A-Za-z0-9]{36,}$/.test(token);
+            var fineGrainedValid = /^github_pat_[A-Za-z0-9_]{20,}$/.test(token);
+            if (!classicValid && !fineGrainedValid) {
+                errorMsg.textContent =
+                    'Invalid token format. GitHub tokens must start with ghp_ (classic) ' +
+                    'or github_pat_ (fine-grained) and be the correct length.';
                 input.focus();
                 return;
             }
