@@ -130,6 +130,8 @@ function validateRequest(body, env) {
     parsedCompareUrl.protocol === 'https:' &&
     parsedCompareUrl.hostname === expectedHost &&
     parsedCompareUrl.pathname.startsWith(expectedPathPrefix);
+  // Keep the raw-string ".." check: URL parsing normalizes path segments, so
+  // traversal-like input could be hidden in pathname after normalization.
   if (!hasExpectedLocation || compareUrl.includes('..')) {
     return 'Invalid compareUrl';
   }
@@ -204,7 +206,9 @@ async function importPrivateKey(pem) {
   try {
     binaryDer = Uint8Array.from(atob(cleanPem), c => c.charCodeAt(0));
   } catch {
-    throw new Error('Invalid GITHUB_APP_PRIVATE_KEY_PEM format');
+    throw new Error(
+      'Invalid GITHUB_APP_PRIVATE_KEY_PEM format. Expected PEM content with BEGIN/END markers.'
+    );
   }
 
   return crypto.subtle.importKey(
