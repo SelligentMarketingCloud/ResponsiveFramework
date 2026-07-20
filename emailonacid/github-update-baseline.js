@@ -1,16 +1,17 @@
 // Injected into the static EOA diff report to enable updating baselines directly
-// from the browser. Intercepts the built-in "Update" button's API call and
-// performs the full Git LFS upload + GitHub Contents API pointer update
-// without leaving the browser or triggering a separate CI pipeline.
+// from the browser. Intercepts the built-in "Update" button's API call,
+// authenticates the user via the GitHub OAuth Device Flow (no PAT required),
+// then fires a repository_dispatch event that triggers a pipeline job to perform
+// the actual Git LFS update – bypassing browser CORS restrictions on the LFS
+// endpoint.
 //
 // Flow for each "Update" click:
 //   1. Resolve the clientId from the report's injected data.
-//   2. Fetch the compare image (PNG) from the Pages URL – same origin, no CORS.
-//   3. Compute the SHA-256 hash and byte-size of the image.
-//   4. Call the GitHub LFS Batch API to obtain a pre-signed upload URL.
-//   5. PUT the raw bytes to that URL (Azure Blob Storage, CORS-open).
-//   6. GET the current file from the GitHub Contents API to obtain its blob SHA.
-//   7. PUT the new LFS pointer text via the GitHub Contents API.
+//   2. Obtain a GitHub OAuth token via the Device Flow (cached in sessionStorage).
+//   3. POST a repository_dispatch event to the GitHub API (CORS-enabled) with the
+//      clientId, branch, and compare image URL as the payload.
+//   4. The triggered workflow fetches the compare image and pushes the updated
+//      LFS-tracked baseline file using the built-in GITHUB_TOKEN.
 (function () {
     'use strict';
 
@@ -47,7 +48,7 @@
         }
         return getToken().then(function (token) {
             if (!token) throw new Error('GitHub authentication cancelled.');
-            return uploadBaseline(token, clientId);
+            return dispatchUpdate(token, clientId);
         });
     }
 
@@ -74,223 +75,215 @@
     }
 
     // -------------------------------------------------------------------------
-    // Token management
+    // Token management – GitHub OAuth Device Flow
     // -------------------------------------------------------------------------
 
     function getToken() {
         var cached = sessionStorage.getItem(TOKEN_KEY);
         if (cached) return Promise.resolve(cached);
-        return promptForToken();
+        if (!config.oauthClientId) {
+            return Promise.reject(new Error(
+                'No OAuth client ID configured. Set the EOA_OAUTH_CLIENT_ID ' +
+                'repository variable to the GitHub OAuth App client ID.'
+            ));
+        }
+        return runDeviceFlow(config.oauthClientId);
     }
 
     function clearToken() {
         sessionStorage.removeItem(TOKEN_KEY);
     }
 
-    function promptForToken() {
-        var token = window.prompt(
-            'Enter a GitHub Personal Access Token with "repo" scope ' +
-            'to update the baseline image on the pull request.\n\n' +
-            'Create one at:\n  https://github.com/settings/tokens\n\n' +
-            'The token is stored in sessionStorage for this browser session only.'
-        );
-        if (!token) return Promise.resolve(null);
-        token = token.trim();
-        sessionStorage.setItem(TOKEN_KEY, token);
-        return Promise.resolve(token);
-    }
-
-    // -------------------------------------------------------------------------
-    // Main upload flow
-    // -------------------------------------------------------------------------
-
-    function uploadBaseline(token, clientId) {
-        var imageUrl = config.eoaUrl + 'compare/' + clientId + '.png';
-        var repoFilePath = 'output/' + clientId + '.png';
-
-        // Step 1: fetch the compare image (same-origin Pages URL).
-        return originalFetch(imageUrl)
-            .then(function (res) {
-                if (!res.ok) {
-                    throw new Error('Failed to fetch compare image: HTTP ' + res.status);
-                }
-                return res.arrayBuffer();
-            })
-            .then(function (buffer) {
-                // Step 2: compute SHA-256 hash and byte-size.
-                return crypto.subtle.digest('SHA-256', buffer).then(function (hashBuffer) {
-                    return {
-                        buffer: buffer,
-                        sha256: arrayBufferToHex(hashBuffer),
-                        size: buffer.byteLength,
-                    };
-                });
-            })
-            .then(function (img) {
-                // Steps 3–4: LFS Batch request → upload binary.
-                return lfsUpload(token, img.sha256, img.size, img.buffer).then(function () {
-                    return img;
-                });
-            })
-            .then(function (img) {
-                // Steps 5–6: update the LFS pointer file in the repo.
-                var pointer = buildLfsPointer(img.sha256, img.size);
-                return updateRepoFile(token, repoFilePath, pointer, clientId);
-            })
-            .catch(function (err) {
-                // Clear a cached token whenever a 401 surfaces so the next
-                // click re-prompts rather than failing silently again.
-                if (err && /\b401\b/.test(err.message)) clearToken();
-                throw err;
-            });
-    }
-
-    // -------------------------------------------------------------------------
-    // LFS helpers
-    // -------------------------------------------------------------------------
-
-    function arrayBufferToHex(buffer) {
-        var bytes = new Uint8Array(buffer);
-        var parts = new Array(bytes.length);
-        for (var i = 0; i < bytes.length; i++) {
-            parts[i] = ('0' + bytes[i].toString(16)).slice(-2);
-        }
-        return parts.join('');
-    }
-
-    function buildLfsPointer(sha256, size) {
-        return 'version https://git-lfs.github.com/spec/v1\n' +
-               'oid sha256:' + sha256 + '\n' +
-               'size ' + size + '\n';
-    }
-
-    // Step 3: call the LFS Batch API to register the object and obtain an
-    //         upload URL, then PUT the raw bytes to that URL (Step 4).
-    function lfsUpload(token, sha256, size, buffer) {
-        var owner = config.owner;
-        var repo  = config.repo;
-        var batchUrl = 'https://github.com/' + owner + '/' + repo +
-                       '.git/info/lfs/objects/batch';
-
-        return originalFetch(batchUrl, {
+    function runDeviceFlow(clientId) {
+        // Step 1: request a device + user code from GitHub.
+        return originalFetch('https://github.com/login/device/code', {
             method: 'POST',
             headers: {
-                'Authorization': 'token ' + token,
-                'Content-Type': 'application/vnd.git-lfs+json',
-                'Accept':        'application/vnd.git-lfs+json',
+                'Content-Type': 'application/json',
+                'Accept': 'application/json',
             },
-            body: JSON.stringify({
-                operation: 'upload',
-                transfers: ['basic'],
-                objects: [{ oid: sha256, size: size }],
-            }),
+            body: JSON.stringify({ client_id: clientId, scope: 'repo' }),
         }).then(function (res) {
-            if (res.status === 401) {
-                clearToken();
-                throw new Error('GitHub token is invalid or expired (401). Please try again.');
-            }
             if (!res.ok) {
                 return res.text().then(function (body) {
-                    throw new Error('LFS batch request failed (' + res.status + '): ' + body);
+                    throw new Error('Device flow initiation failed (' + res.status + '): ' + body);
                 });
             }
             return res.json();
-        }).then(function (batch) {
-            var obj = batch.objects && batch.objects[0];
-            if (!obj) throw new Error('LFS batch response contained no objects.');
+        }).then(function (data) {
+            // Step 2: show the user the one-time code and open the activation page.
+            showDeviceFlowModal(
+                data.user_code,
+                data.verification_uri || 'https://github.com/activate'
+            );
+            // Step 3: poll until the user completes authorization.
+            return pollForToken(clientId, data.device_code, (data.interval || 5) * 1000);
+        });
+    }
 
-            // If the server reports the object already exists, skip the upload.
-            if (!obj.actions || !obj.actions.upload) {
-                console.log('[eoa] LFS object already exists in storage; skipping upload.');
-                return;
+    function pollForToken(clientId, deviceCode, pollInterval) {
+        return new Promise(function (resolve, reject) {
+            function poll() {
+                originalFetch('https://github.com/login/oauth/access_token', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        client_id: clientId,
+                        device_code: deviceCode,
+                        grant_type: 'urn:ietf:params:oauth:grant-type:device_code',
+                    }),
+                }).then(function (res) {
+                    return res.json();
+                }).then(function (data) {
+                    if (data.access_token) {
+                        closeDeviceFlowModal();
+                        sessionStorage.setItem(TOKEN_KEY, data.access_token);
+                        resolve(data.access_token);
+                    } else if (data.error === 'authorization_pending') {
+                        setTimeout(poll, pollInterval);
+                    } else if (data.error === 'slow_down') {
+                        // Server asked us to back off; add 5 s on top of the current interval.
+                        pollInterval += 5000;
+                        setTimeout(poll, pollInterval);
+                    } else if (data.error === 'expired_token') {
+                        closeDeviceFlowModal();
+                        reject(new Error('Device code expired. Please click Update again.'));
+                    } else if (data.error === 'access_denied') {
+                        closeDeviceFlowModal();
+                        reject(new Error('Authorization was denied.'));
+                    } else {
+                        closeDeviceFlowModal();
+                        reject(new Error('OAuth error: ' + (data.error_description || data.error)));
+                    }
+                }).catch(function (err) {
+                    closeDeviceFlowModal();
+                    reject(err);
+                });
             }
 
-            var upload = obj.actions.upload;
-            // Merge any server-supplied headers (e.g. SAS tokens) with the
-            // content-type header required for raw binary uploads.
-            var uploadHeaders = Object.assign(
-                { 'Content-Type': 'application/octet-stream' },
-                upload.header || {}
-            );
-
-            return originalFetch(upload.href, {
-                method: 'PUT',
-                headers: uploadHeaders,
-                body: buffer,
-            }).then(function (res) {
-                if (!res.ok) {
-                    return res.text().then(function (body) {
-                        throw new Error('LFS upload failed (' + res.status + '): ' + body);
-                    });
-                }
-            });
+            poll();
         });
     }
 
     // -------------------------------------------------------------------------
-    // GitHub Contents API helpers
+    // Device Flow modal UI
     // -------------------------------------------------------------------------
 
-    function ghHeaders(token) {
-        return {
-            'Authorization':       'token ' + token,
-            'Content-Type':        'application/json',
-            'Accept':              'application/vnd.github+json',
-            'X-GitHub-Api-Version': '2022-11-28',
-        };
+    var MODAL_ID = 'eoa-device-flow-modal';
+
+    function showDeviceFlowModal(userCode, verificationUri) {
+        var existing = document.getElementById(MODAL_ID);
+        if (existing) existing.parentNode.removeChild(existing);
+
+        var overlay = document.createElement('div');
+        overlay.id = MODAL_ID;
+        overlay.style.cssText = [
+            'position:fixed', 'inset:0', 'z-index:9999',
+            'display:flex', 'align-items:center', 'justify-content:center',
+            'background:rgba(0,0,0,0.6)',
+        ].join(';');
+
+        var box = document.createElement('div');
+        box.style.cssText = [
+            'background:#fff', 'border-radius:8px', 'padding:32px 40px',
+            'max-width:400px', 'width:90%', 'text-align:center',
+            'font-family:system-ui,sans-serif', 'box-shadow:0 4px 32px rgba(0,0,0,0.3)',
+        ].join(';');
+
+        var heading = document.createElement('h2');
+        heading.textContent = 'Authorize GitHub';
+        heading.style.cssText = 'margin:0 0 12px;font-size:1.2rem;';
+
+        var instructions = document.createElement('p');
+        instructions.style.cssText = 'margin:0 0 20px;color:#444;font-size:0.95rem;line-height:1.5;';
+        instructions.textContent =
+            'Open the link below and enter this code to authorize the baseline update:';
+
+        var codeEl = document.createElement('div');
+        codeEl.textContent = userCode;
+        codeEl.style.cssText = [
+            'font-size:2rem', 'font-weight:bold', 'letter-spacing:0.15em',
+            'font-family:monospace', 'background:#f0f4f8', 'border-radius:6px',
+            'padding:12px', 'margin:0 0 20px', 'user-select:all',
+        ].join(';');
+
+        var link = document.createElement('a');
+        link.href = verificationUri;
+        link.target = '_blank';
+        link.rel = 'noopener noreferrer';
+        link.textContent = 'Open GitHub Authorization Page';
+        link.style.cssText = [
+            'display:inline-block', 'background:#238636', 'color:#fff',
+            'text-decoration:none', 'border-radius:6px', 'padding:10px 20px',
+            'font-size:0.95rem', 'margin-bottom:16px',
+        ].join(';');
+
+        var status = document.createElement('p');
+        status.style.cssText = 'color:#666;font-size:0.85rem;margin:0;';
+        status.textContent = 'Waiting for authorization...';
+
+        [heading, instructions, codeEl, link, status].forEach(function (el) {
+            box.appendChild(el);
+        });
+        overlay.appendChild(box);
+        document.body.appendChild(overlay);
     }
 
-    // Steps 5–6: retrieve the current blob SHA then PUT the new LFS pointer.
-    function updateRepoFile(token, filePath, pointerText, clientId) {
-        var owner  = config.owner;
-        var repo   = config.repo;
-        var branch = config.branch;
-        var apiBase = 'https://api.github.com/repos/' + owner + '/' + repo +
-                      '/contents/' + filePath;
+    function closeDeviceFlowModal() {
+        var el = document.getElementById(MODAL_ID);
+        if (el) el.parentNode.removeChild(el);
+    }
 
-        // GET the current file to obtain its blob SHA (required for updates).
-        // A 404 means the file doesn't exist yet in the repo; we create it.
-        return originalFetch(apiBase + '?ref=' + encodeURIComponent(branch), {
-            headers: ghHeaders(token),
-        }).then(function (res) {
+    // -------------------------------------------------------------------------
+    // Dispatch the update to the pipeline via repository_dispatch
+    // -------------------------------------------------------------------------
+
+    function dispatchUpdate(token, clientId) {
+        var owner      = config.owner;
+        var repo       = config.repo;
+        var branch     = config.branch;
+        var compareUrl = config.eoaUrl + 'compare/' + clientId + '.png';
+
+        return originalFetch(
+            'https://api.github.com/repos/' + owner + '/' + repo + '/dispatches',
+            {
+                method: 'POST',
+                headers: {
+                    'Authorization':        'token ' + token,
+                    'Content-Type':         'application/json',
+                    'Accept':               'application/vnd.github+json',
+                    'X-GitHub-Api-Version': '2022-11-28',
+                },
+                body: JSON.stringify({
+                    event_type: 'eoa-update-baseline',
+                    client_payload: {
+                        clientId:   clientId,
+                        prNumber:   config.prNumber,
+                        branch:     branch,
+                        compareUrl: compareUrl,
+                    },
+                }),
+            }
+        ).then(function (res) {
             if (res.status === 401) {
                 clearToken();
                 throw new Error('GitHub token is invalid or expired (401). Please try again.');
             }
-            if (res.status !== 200 && res.status !== 404) {
-                return res.text().then(function (body) {
-                    throw new Error(
-                        'Could not read current file metadata (' + res.status + '): ' + body
-                    );
-                });
-            }
-            return res.status === 404 ? null : res.json();
-        }).then(function (file) {
-            // The Contents API requires Base64-encoded content.
-            // The LFS pointer is pure ASCII so btoa() is safe.
-            var body = {
-                message: 'chore(eoa): update baseline screenshot for ' + clientId,
-                content: btoa(pointerText),
-                branch: branch,
-            };
-            // Include the existing blob SHA when updating an already-tracked file.
-            if (file) body.sha = file.sha;
-
-            return originalFetch(apiBase, {
-                method: 'PUT',
-                headers: ghHeaders(token),
-                body: JSON.stringify(body),
-            });
-        }).then(function (res) {
-            if (res.status === 401) {
-                clearToken();
-                throw new Error('GitHub token is invalid or expired (401). Please try again.');
+            if (res.status === 403) {
+                throw new Error(
+                    'Token lacks permission to dispatch workflows. ' +
+                    'Ensure the authorized OAuth App has the "repo" scope.'
+                );
             }
             if (!res.ok) {
                 return res.text().then(function (body) {
-                    throw new Error('File update failed (' + res.status + '): ' + body);
+                    throw new Error('Dispatch failed (' + res.status + '): ' + body);
                 });
             }
+            // 204 No Content on success – the pipeline handles the rest.
         });
     }
 })();
