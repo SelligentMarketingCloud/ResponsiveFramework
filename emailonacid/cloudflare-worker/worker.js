@@ -102,7 +102,14 @@ function validateRequest(body, env) {
     return 'Invalid clientId';
   }
 
-  if (!/^[A-Za-z0-9_./-]+$/.test(String(branch || ''))) {
+  const branchString = String(branch || '');
+  // Git refs may include "/" (e.g. feature/foo), but disallow traversal-like patterns.
+  const branchLooksSafe =
+    /^[A-Za-z0-9_./-]+$/.test(branchString) &&
+    !branchString.startsWith('/') &&
+    !branchString.includes('..') &&
+    !branchString.includes('//');
+  if (!branchLooksSafe) {
     return 'Invalid branch';
   }
 
@@ -149,6 +156,7 @@ async function createAppJwt(appId, privateKeyPem) {
   const now = Math.floor(Date.now() / 1000);
   const header = { alg: 'RS256', typ: 'JWT' };
   const payload = {
+    // Backdate iat slightly to tolerate small clock differences between systems.
     iat: now - 60,
     exp: now + 9 * 60,
     iss: appId,
