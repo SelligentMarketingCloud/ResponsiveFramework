@@ -4,7 +4,7 @@
  * Expected environment variables/secrets:
  * - GITHUB_APP_ID (plain text)
  * - GITHUB_INSTALLATION_ID (plain text)
- * - GITHUB_APP_PRIVATE_KEY_PEM (secret, full PEM with BEGIN/END lines)
+ * - GITHUB_APP_PRIVATE_KEY_PEM (secret, PKCS#8 PEM with BEGIN/END lines)
  * - ALLOWED_OWNER (plain text)
  * - ALLOWED_REPO (plain text)
  * - ALLOWED_ORIGIN (optional, defaults to '*')
@@ -195,9 +195,13 @@ async function createAppJwt(appId, privateKeyPem) {
 }
 
 async function importPrivateKey(pem) {
+  if (pem.includes('-----BEGIN RSA PRIVATE KEY-----')) {
+    throw new Error(
+      'GITHUB_APP_PRIVATE_KEY_PEM must be PKCS#8. Convert RSA PKCS#1 with: openssl pkcs8 -topk8 -nocrypt -in app.pem -out app-pkcs8.pem'
+    );
+  }
+
   const cleanPem = pem
-    .replace('-----BEGIN RSA PRIVATE KEY-----', '')
-    .replace('-----END RSA PRIVATE KEY-----', '')
     .replace('-----BEGIN PRIVATE KEY-----', '')
     .replace('-----END PRIVATE KEY-----', '')
     .replace(/\s+/g, '');
@@ -221,11 +225,15 @@ async function importPrivateKey(pem) {
 }
 
 function base64UrlEncode(value) {
-  return btoa(value).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+  const bytes = new TextEncoder().encode(value);
+  return uint8ArrayToBase64Url(bytes);
 }
 
 function arrayBufferToBase64Url(buffer) {
-  const bytes = new Uint8Array(buffer);
+  return uint8ArrayToBase64Url(new Uint8Array(buffer));
+}
+
+function uint8ArrayToBase64Url(bytes) {
   let binary = '';
   for (let i = 0; i < bytes.byteLength; i++) {
     binary += String.fromCharCode(bytes[i]);

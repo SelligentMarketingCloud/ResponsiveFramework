@@ -22,10 +22,16 @@ Use the script in `worker.js`.
 Set Worker variables/secrets:
 - `GITHUB_APP_ID`
 - `GITHUB_INSTALLATION_ID`
-- `GITHUB_APP_PRIVATE_KEY_PEM` (secret)
+- `GITHUB_APP_PRIVATE_KEY_PEM` (secret, PKCS#8 PEM)
 - `ALLOWED_OWNER=SelligentMarketingCloud`
 - `ALLOWED_REPO=ResponsiveFramework`
 - `ALLOWED_ORIGIN` (optional, e.g. `https://selligentmarketingcloud.github.io`)
+
+If your key is PKCS#1 (`BEGIN RSA PRIVATE KEY`), convert it first:
+
+```bash
+openssl pkcs8 -topk8 -nocrypt -in app.pem -out app-pkcs8.pem
+```
 
 ## 3) Wire repository variable
 
