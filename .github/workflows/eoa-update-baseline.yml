@@ -40,10 +40,15 @@ jobs:
             exit 1
           fi
 
-          # Validate the compare URL comes from the expected GitHub Pages origin.
+          # Validate the compare URL comes from the expected GitHub Pages origin and
+          # repository path, and contains no path traversal sequences.
           EXPECTED_PREFIX="https://${REPO_OWNER}.github.io/${REPO_NAME}/"
           if [[ "$COMPARE_URL" != "$EXPECTED_PREFIX"* ]]; then
-            echo "Compare URL is not from the trusted GitHub Pages origin: $COMPARE_URL" >&2
+            echo "Compare URL is not from the trusted GitHub Pages origin/path: $COMPARE_URL" >&2
+            exit 1
+          fi
+          if [[ "$COMPARE_URL" == *".."* ]]; then
+            echo "Compare URL contains path traversal sequences: $COMPARE_URL" >&2
             exit 1
           fi
 

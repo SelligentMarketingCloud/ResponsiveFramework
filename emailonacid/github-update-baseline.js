@@ -121,7 +121,7 @@
         });
     }
 
-    function pollForToken(clientId, deviceCode, interval) {
+    function pollForToken(clientId, deviceCode, pollInterval) {
         return new Promise(function (resolve, reject) {
             function poll() {
                 originalFetch('https://github.com/login/oauth/access_token', {
@@ -143,11 +143,11 @@
                         sessionStorage.setItem(TOKEN_KEY, data.access_token);
                         resolve(data.access_token);
                     } else if (data.error === 'authorization_pending') {
-                        setTimeout(poll, interval);
+                        setTimeout(poll, pollInterval);
                     } else if (data.error === 'slow_down') {
-                        // Server asked us to back off; add 5 s on top of the base interval.
-                        interval += 5000;
-                        setTimeout(poll, interval);
+                        // Server asked us to back off; add 5 s on top of the current interval.
+                        pollInterval += 5000;
+                        setTimeout(poll, pollInterval);
                     } else if (data.error === 'expired_token') {
                         closeDeviceFlowModal();
                         reject(new Error('Device code expired. Please click Update again.'));
@@ -223,7 +223,7 @@
 
         var status = document.createElement('p');
         status.style.cssText = 'color:#666;font-size:0.85rem;margin:0;';
-        status.textContent = 'Waiting for authorization\u2026';
+        status.textContent = 'Waiting for authorization...';
 
         [heading, instructions, codeEl, link, status].forEach(function (el) {
             box.appendChild(el);
