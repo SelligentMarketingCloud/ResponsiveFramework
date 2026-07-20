@@ -1,0 +1,81 @@
+name: Update EOA Baseline
+
+# Triggered by the browser-side EOA diff report when a user clicks "Update"
+# after authorizing via the GitHub OAuth Device Flow. The browser cannot call
+# the Git LFS endpoint directly (no CORS headers), so it dispatches this event
+# instead and lets the pipeline perform the Git LFS operations.
+#
+# Required repository variable: EOA_OAUTH_CLIENT_ID (the GitHub OAuth App client ID).
+
+on:
+  repository_dispatch:
+    types: [eoa-update-baseline]
+
+permissions:
+  contents: write
+
+jobs:
+  update:
+    name: Update baseline screenshot
+    runs-on: ubuntu-latest
+    steps:
+      - name: Validate payload
+        env:
+          CLIENT_ID: ${{ github.event.client_payload.clientId }}
+          BRANCH: ${{ github.event.client_payload.branch }}
+          COMPARE_URL: ${{ github.event.client_payload.compareUrl }}
+          REPO_OWNER: ${{ github.repository_owner }}
+          REPO_NAME: ${{ github.event.repository.name }}
+        run: |
+          set -euo pipefail
+
+          if [ -z "$CLIENT_ID" ] || [ -z "$BRANCH" ] || [ -z "$COMPARE_URL" ]; then
+            echo "Missing required payload fields (clientId, branch, compareUrl)" >&2
+            exit 1
+          fi
+
+          # Prevent path traversal: clientId must be safe filename characters only.
+          if ! echo "$CLIENT_ID" | grep -qE '^[a-zA-Z0-9_-]+$'; then
+            echo "Invalid clientId: $CLIENT_ID" >&2
+            exit 1
+          fi
+
+          # Validate the compare URL comes from the expected GitHub Pages origin.
+          EXPECTED_PREFIX="https://${REPO_OWNER}.github.io/${REPO_NAME}/"
+          if [[ "$COMPARE_URL" != "$EXPECTED_PREFIX"* ]]; then
+            echo "Compare URL is not from the trusted GitHub Pages origin: $COMPARE_URL" >&2
+            exit 1
+          fi
+
+      - name: Checkout PR branch
+        uses: actions/checkout@v5
+        with:
+          ref: ${{ github.event.client_payload.branch }}
+          lfs: true
+
+      - name: Download compare image
+        env:
+          CLIENT_ID: ${{ github.event.client_payload.clientId }}
+          COMPARE_URL: ${{ github.event.client_payload.compareUrl }}
+        run: |
+          set -euo pipefail
+          mkdir -p output
+          curl --fail --silent --show-error --location \
+            --output "output/${CLIENT_ID}.png" \
+            "$COMPARE_URL"
+
+      - name: Commit and push updated baseline
+        env:
+          CLIENT_ID: ${{ github.event.client_payload.clientId }}
+          PR_NUMBER: ${{ github.event.client_payload.prNumber }}
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add "output/${CLIENT_ID}.png"
+          if git diff --staged --quiet; then
+            echo "Baseline is already up to date; nothing to commit."
+            exit 0
+          fi
+          git commit -m "chore(eoa): update baseline screenshot for ${CLIENT_ID} [pr #${PR_NUMBER}]"
+          git push
