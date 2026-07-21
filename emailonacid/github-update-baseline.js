@@ -16,6 +16,11 @@
 
     var originalFetch = window.fetch.bind(window);
 
+    // In-memory session token obtained from the OAuth popup's postMessage.
+    // Used as a fallback to avoid relying on cross-site cookies, which are
+    // blocked by modern browsers even when SameSite=None is set.
+    var _sessionToken = null;
+
     // Intercept the report library's PUT /api/reports call that backs "Update".
     window.fetch = function (url, options) {
         if (typeof url === 'string' &&
@@ -113,11 +118,15 @@
     }
 
     function authStatus(proxyUrl) {
+        var headers = { 'Accept': 'application/json' };
+        if (_sessionToken) {
+            headers['Authorization'] = 'Bearer ' + _sessionToken;
+        }
         return originalFetch(buildProxyUrl(proxyUrl, '/auth/status'), {
             method: 'GET',
             mode: 'cors',
             credentials: 'include',
-            headers: { 'Accept': 'application/json' },
+            headers: headers,
         }).then(function (res) {
             return readBody(res).then(function (body) {
                 if (!res.ok) {
@@ -130,14 +139,18 @@
     }
 
     function postDispatch(proxyUrl, requestPayload) {
+        var headers = {
+            'Content-Type': 'application/json',
+            'Accept': 'application/json',
+        };
+        if (_sessionToken) {
+            headers['Authorization'] = 'Bearer ' + _sessionToken;
+        }
         return originalFetch(proxyUrl, {
             method: 'POST',
             mode: 'cors',
             credentials: 'include',
-            headers: {
-                'Content-Type': 'application/json',
-                'Accept': 'application/json',
-            },
+            headers: headers,
             body: JSON.stringify(requestPayload),
         }).then(function (res) {
             return readBody(res).then(function (body) {
@@ -181,6 +194,9 @@
                 finished = true;
                 cleanup();
                 if (event.data.ok) {
+                    if (event.data.token) {
+                        _sessionToken = event.data.token;
+                    }
                     resolve();
                 } else {
                     reject(new Error(event.data.error || 'Authentication failed'));
