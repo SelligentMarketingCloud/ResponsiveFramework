@@ -216,6 +216,7 @@ async function handleAuthCallback(request, env) {
 
   return authCallbackPage(true, statePayload.origin, null, {
     login: user.login,
+    token: tokenBody.access_token,
     setCookie: `${cookieName}=${encodeURIComponent(tokenBody.access_token)}; HttpOnly; Secure; SameSite=None; Path=/; Max-Age=${maxAge}`,
   });
 }
@@ -521,6 +522,7 @@ function authCallbackPage(ok, origin, errorMessage, data = {}) {
     type: 'eoa-github-auth',
     ok,
     login: data.login || null,
+    token: data.token || null,
     error: errorMessage || null,
   };
 

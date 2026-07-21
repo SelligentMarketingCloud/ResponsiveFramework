@@ -16,6 +16,11 @@
 
     var originalFetch = window.fetch.bind(window);
 
+    // In-memory session token obtained from the OAuth popup's postMessage.
+    // Used as a fallback to avoid relying on cross-site cookies, which are
+    // blocked by modern browsers even when SameSite=None is set.
+    var sessionToken = null;
+
     // Intercept the report library's PUT /api/reports call that backs "Update".
     window.fetch = function (url, options) {
         if (typeof url === 'string' &&
@@ -113,11 +118,15 @@
     }
 
     function authStatus(proxyUrl) {
+        var headers = { 'Accept': 'application/json' };
+        if (sessionToken) {
+            headers['Authorization'] = 'Bearer ' + sessionToken;
+        }
         return originalFetch(buildProxyUrl(proxyUrl, '/auth/status'), {
             method: 'GET',
             mode: 'cors',
             credentials: 'include',
-            headers: { 'Accept': 'application/json' },
+            headers: headers,
         }).then(function (res) {
             return readBody(res).then(function (body) {
                 if (!res.ok) {
@@ -130,14 +139,18 @@
     }
 
     function postDispatch(proxyUrl, requestPayload) {
+        var headers = {
+            'Content-Type': 'application/json',
+            'Accept': 'application/json',
+        };
+        if (sessionToken) {
+            headers['Authorization'] = 'Bearer ' + sessionToken;
+        }
         return originalFetch(proxyUrl, {
             method: 'POST',
             mode: 'cors',
             credentials: 'include',
-            headers: {
-                'Content-Type': 'application/json',
-                'Accept': 'application/json',
-            },
+            headers: headers,
             body: JSON.stringify(requestPayload),
         }).then(function (res) {
             return readBody(res).then(function (body) {
@@ -178,9 +191,20 @@
 
             function onMessage(event) {
                 if (!event || !event.data || event.data.type !== 'eoa-github-auth') return;
+                // Only accept messages from the expected proxy origin to prevent
+                // malicious pages from injecting a fake auth token.
+                try {
+                    if (event.origin !== new URL(proxyUrl).origin) return;
+                } catch (e) {
+                    return;
+                }
                 finished = true;
                 cleanup();
                 if (event.data.ok) {
+                    var token = event.data.token;
+                    if (typeof token === 'string' && token.length > 0) {
+                        sessionToken = token;
+                    }
                     resolve();
                 } else {
                     reject(new Error(event.data.error || 'Authentication failed'));
