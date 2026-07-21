@@ -1,24 +1,19 @@
 // Injected into the static EOA diff report to enable updating baselines directly
-// from the browser. Intercepts the built-in "Update" button's API call,
-// authenticates the user via the GitHub OAuth Device Flow (no PAT required),
-// then fires a repository_dispatch event that triggers a pipeline job to perform
-// the actual Git LFS update – bypassing browser CORS restrictions on the LFS
-// endpoint.
+// from the browser. Intercepts the built-in "Update" button's API call and
+// forwards the update request to a CORS-enabled proxy endpoint.
 //
-// Flow for each "Update" click:
-//   1. Resolve the clientId from the report's injected data.
-//   2. Obtain a GitHub OAuth token via the Device Flow (cached in sessionStorage).
-//   3. POST a repository_dispatch event to the GitHub API (CORS-enabled) with the
-//      clientId, branch, and compare image URL as the payload.
-//   4. The triggered workflow fetches the compare image and pushes the updated
-//      LFS-tracked baseline file using the built-in GITHUB_TOKEN.
+// The proxy runs server-side (e.g. Cloudflare Worker), requires each user to
+// authenticate via GitHub App OAuth, and then dispatches the workflow event as
+// that authenticated user.
 (function () {
     'use strict';
+
+    // Wait up to 120000 milliseconds for the OAuth popup to complete.
+    var AUTH_POPUP_TIMEOUT_MS = 120000;
 
     var config = window.__eoa_config__;
     if (!config || !config.prNumber) return;
 
-    var TOKEN_KEY = 'eoa_gh_token';
     var originalFetch = window.fetch.bind(window);
 
     // Intercept the report library's PUT /api/reports call that backs "Update".
@@ -46,14 +41,9 @@
                 '", test "' + payload.name + '"'
             ));
         }
-        return getToken().then(function (token) {
-            if (!token) throw new Error('GitHub authentication cancelled.');
-            return dispatchUpdate(token, clientId);
-        });
+        return dispatchUpdateViaProxy(clientId);
     }
 
-    // Walk the injected report data to find the specFilename for the given
-    // suite/test combination (e.g. "Windows / Desktop / Outlook 365").
     function resolveClientId(suiteId, name) {
         var report = window.__injectedData__ && window.__injectedData__.report;
         if (!report) return null;
@@ -63,7 +53,6 @@
             for (var j = 0; j < suite.tests.length; j++) {
                 var test = suite.tests[j];
                 if (test.name === name && test.specFilename) {
-                    // Strip the .png extension to get the client ID used as the filename.
                     var filename = test.specFilename;
                     return /\.png$/i.test(filename)
                         ? filename.slice(0, -4)
@@ -75,216 +64,161 @@
     }
 
     // -------------------------------------------------------------------------
-    // Token management – GitHub OAuth Device Flow
+    // Dispatch the update through a user-authenticated GitHub App proxy endpoint
     // -------------------------------------------------------------------------
 
-    function getToken() {
-        var cached = sessionStorage.getItem(TOKEN_KEY);
-        if (cached) return Promise.resolve(cached);
-        if (!config.oauthClientId) {
+    function dispatchUpdateViaProxy(clientId) {
+        var proxyUrl = config.githubAppProxyUrl;
+        if (!proxyUrl) {
             return Promise.reject(new Error(
-                'No OAuth client ID configured. Set the EOA_OAUTH_CLIENT_ID ' +
-                'repository variable to the GitHub OAuth App client ID.'
+                'GitHub App proxy URL is not configured. Set EOA_GITHUB_APP_PROXY_URL repository variable.'
             ));
         }
-        return runDeviceFlow(config.oauthClientId);
+
+        var requestPayload = {
+            owner: config.owner,
+            repo: config.repo,
+            event_type: 'eoa-update-baseline',
+            client_payload: {
+                clientId: clientId,
+                prNumber: config.prNumber,
+                branch: config.branch,
+                compareUrl: config.eoaUrl + 'compare/' + clientId + '.png',
+            },
+        };
+
+        return ensureAuthenticated(proxyUrl)
+            .then(function () {
+                return postDispatch(proxyUrl, requestPayload);
+            })
+            .catch(function (error) {
+                return Promise.reject(new Error('Could not send baseline update: ' + error.message));
+            });
     }
 
-    function clearToken() {
-        sessionStorage.removeItem(TOKEN_KEY);
+    function ensureAuthenticated(proxyUrl) {
+        return authStatus(proxyUrl).then(function (status) {
+            if (status.authenticated) {
+                return status;
+            }
+            return startAuthFlow(proxyUrl).then(function () {
+                return authStatus(proxyUrl).then(function (afterAuth) {
+                    if (!afterAuth.authenticated) {
+                        throw new Error('Authentication completed but no active session was found');
+                    }
+                    return afterAuth;
+                });
+            });
+        });
     }
 
-    function runDeviceFlow(clientId) {
-        // Step 1: request a device + user code from GitHub.
-        return originalFetch('https://github.com/login/device/code', {
+    function authStatus(proxyUrl) {
+        return originalFetch(buildProxyUrl(proxyUrl, '/auth/status'), {
+            method: 'GET',
+            mode: 'cors',
+            credentials: 'include',
+            headers: { 'Accept': 'application/json' },
+        }).then(function (res) {
+            return readBody(res).then(function (body) {
+                if (!res.ok) {
+                    var message = body && body.message ? body.message : 'Failed to load authentication status';
+                    throw new Error(message);
+                }
+                return body || {};
+            });
+        });
+    }
+
+    function postDispatch(proxyUrl, requestPayload) {
+        return originalFetch(proxyUrl, {
             method: 'POST',
+            mode: 'cors',
+            credentials: 'include',
             headers: {
                 'Content-Type': 'application/json',
                 'Accept': 'application/json',
             },
-            body: JSON.stringify({ client_id: clientId, scope: 'repo' }),
+            body: JSON.stringify(requestPayload),
         }).then(function (res) {
-            if (!res.ok) {
-                return res.text().then(function (body) {
-                    throw new Error('Device flow initiation failed (' + res.status + '): ' + body);
-                });
-            }
-            return res.json();
-        }).then(function (data) {
-            // Step 2: show the user the one-time code and open the activation page.
-            showDeviceFlowModal(
-                data.user_code,
-                data.verification_uri || 'https://github.com/activate'
-            );
-            // Step 3: poll until the user completes authorization.
-            return pollForToken(clientId, data.device_code, (data.interval || 5) * 1000);
+            return readBody(res).then(function (body) {
+                if (res.status === 401 && body && body.authUrl) {
+                    return startAuthFlow(proxyUrl, body.authUrl)
+                        .then(function () { return postDispatch(proxyUrl, requestPayload); });
+                }
+                if (!res.ok) {
+                    var message = body && body.message ? body.message : body && body.raw ? body.raw : 'Unknown error';
+                    throw new Error('Proxy dispatch failed (' + res.status + '): ' + message);
+                }
+            });
         });
     }
 
-    function pollForToken(clientId, deviceCode, pollInterval) {
+    function startAuthFlow(proxyUrl, authUrl) {
+        var loginUrl = authUrl || buildProxyUrl(proxyUrl, '/auth/start');
+        var popup = window.open(loginUrl, 'eoa-github-auth', 'width=520,height=740,noopener,noreferrer');
+        if (!popup) {
+            return Promise.reject(new Error('Login popup was blocked by the browser'));
+        }
+
         return new Promise(function (resolve, reject) {
-            function poll() {
-                originalFetch('https://github.com/login/oauth/access_token', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Accept': 'application/json',
-                    },
-                    body: JSON.stringify({
-                        client_id: clientId,
-                        device_code: deviceCode,
-                        grant_type: 'urn:ietf:params:oauth:grant-type:device_code',
-                    }),
-                }).then(function (res) {
-                    return res.json();
-                }).then(function (data) {
-                    if (data.access_token) {
-                        closeDeviceFlowModal();
-                        sessionStorage.setItem(TOKEN_KEY, data.access_token);
-                        resolve(data.access_token);
-                    } else if (data.error === 'authorization_pending') {
-                        setTimeout(poll, pollInterval);
-                    } else if (data.error === 'slow_down') {
-                        // Server asked us to back off; add 5 s on top of the current interval.
-                        pollInterval += 5000;
-                        setTimeout(poll, pollInterval);
-                    } else if (data.error === 'expired_token') {
-                        closeDeviceFlowModal();
-                        reject(new Error('Device code expired. Please click Update again.'));
-                    } else if (data.error === 'access_denied') {
-                        closeDeviceFlowModal();
-                        reject(new Error('Authorization was denied.'));
-                    } else {
-                        closeDeviceFlowModal();
-                        reject(new Error('OAuth error: ' + (data.error_description || data.error)));
+            var finished = false;
+            var timeout = setTimeout(function () {
+                cleanup();
+                reject(new Error('Timed out waiting for GitHub authentication'));
+            }, AUTH_POPUP_TIMEOUT_MS);
+
+            var closedInterval = setInterval(function () {
+                if (!popup || popup.closed) {
+                    cleanup();
+                    if (!finished) {
+                        reject(new Error('Authentication popup was closed before completing sign-in'));
                     }
-                }).catch(function (err) {
-                    closeDeviceFlowModal();
-                    reject(err);
-                });
+                }
+            }, 500);
+
+            function onMessage(event) {
+                if (!event || !event.data || event.data.type !== 'eoa-github-auth') return;
+                finished = true;
+                cleanup();
+                if (event.data.ok) {
+                    resolve();
+                } else {
+                    reject(new Error(event.data.error || 'Authentication failed'));
+                }
             }
 
-            poll();
+            function cleanup() {
+                clearTimeout(timeout);
+                clearInterval(closedInterval);
+                window.removeEventListener('message', onMessage);
+                try {
+                    if (popup && !popup.closed) popup.close();
+                } catch (e) {
+                    // Ignore cross-origin popup close errors.
+                }
+            }
+
+            window.addEventListener('message', onMessage);
         });
     }
 
-    // -------------------------------------------------------------------------
-    // Device Flow modal UI
-    // -------------------------------------------------------------------------
-
-    var MODAL_ID = 'eoa-device-flow-modal';
-
-    function showDeviceFlowModal(userCode, verificationUri) {
-        var existing = document.getElementById(MODAL_ID);
-        if (existing) existing.parentNode.removeChild(existing);
-
-        var overlay = document.createElement('div');
-        overlay.id = MODAL_ID;
-        overlay.style.cssText = [
-            'position:fixed', 'inset:0', 'z-index:9999',
-            'display:flex', 'align-items:center', 'justify-content:center',
-            'background:rgba(0,0,0,0.6)',
-        ].join(';');
-
-        var box = document.createElement('div');
-        box.style.cssText = [
-            'background:#fff', 'border-radius:8px', 'padding:32px 40px',
-            'max-width:400px', 'width:90%', 'text-align:center',
-            'font-family:system-ui,sans-serif', 'box-shadow:0 4px 32px rgba(0,0,0,0.3)',
-        ].join(';');
-
-        var heading = document.createElement('h2');
-        heading.textContent = 'Authorize GitHub';
-        heading.style.cssText = 'margin:0 0 12px;font-size:1.2rem;';
-
-        var instructions = document.createElement('p');
-        instructions.style.cssText = 'margin:0 0 20px;color:#444;font-size:0.95rem;line-height:1.5;';
-        instructions.textContent =
-            'Open the link below and enter this code to authorize the baseline update:';
-
-        var codeEl = document.createElement('div');
-        codeEl.textContent = userCode;
-        codeEl.style.cssText = [
-            'font-size:2rem', 'font-weight:bold', 'letter-spacing:0.15em',
-            'font-family:monospace', 'background:#f0f4f8', 'border-radius:6px',
-            'padding:12px', 'margin:0 0 20px', 'user-select:all',
-        ].join(';');
-
-        var link = document.createElement('a');
-        link.href = verificationUri;
-        link.target = '_blank';
-        link.rel = 'noopener noreferrer';
-        link.textContent = 'Open GitHub Authorization Page';
-        link.style.cssText = [
-            'display:inline-block', 'background:#238636', 'color:#fff',
-            'text-decoration:none', 'border-radius:6px', 'padding:10px 20px',
-            'font-size:0.95rem', 'margin-bottom:16px',
-        ].join(';');
-
-        var status = document.createElement('p');
-        status.style.cssText = 'color:#666;font-size:0.85rem;margin:0;';
-        status.textContent = 'Waiting for authorization...';
-
-        [heading, instructions, codeEl, link, status].forEach(function (el) {
-            box.appendChild(el);
-        });
-        overlay.appendChild(box);
-        document.body.appendChild(overlay);
+    function buildProxyUrl(baseUrl, suffixPath) {
+        var url = new URL(baseUrl, window.location.href);
+        var normalizedBasePath = url.pathname.replace(/\/+$/, '');
+        url.pathname = normalizedBasePath + suffixPath;
+        url.search = '';
+        url.hash = '';
+        return url.toString();
     }
 
-    function closeDeviceFlowModal() {
-        var el = document.getElementById(MODAL_ID);
-        if (el) el.parentNode.removeChild(el);
-    }
-
-    // -------------------------------------------------------------------------
-    // Dispatch the update to the pipeline via repository_dispatch
-    // -------------------------------------------------------------------------
-
-    function dispatchUpdate(token, clientId) {
-        var owner      = config.owner;
-        var repo       = config.repo;
-        var branch     = config.branch;
-        var compareUrl = config.eoaUrl + 'compare/' + clientId + '.png';
-
-        return originalFetch(
-            'https://api.github.com/repos/' + owner + '/' + repo + '/dispatches',
-            {
-                method: 'POST',
-                headers: {
-                    'Authorization':        'token ' + token,
-                    'Content-Type':         'application/json',
-                    'Accept':               'application/vnd.github+json',
-                    'X-GitHub-Api-Version': '2022-11-28',
-                },
-                body: JSON.stringify({
-                    event_type: 'eoa-update-baseline',
-                    client_payload: {
-                        clientId:   clientId,
-                        prNumber:   config.prNumber,
-                        branch:     branch,
-                        compareUrl: compareUrl,
-                    },
-                }),
+    function readBody(res) {
+        return res.text().then(function (text) {
+            if (!text) return {};
+            try {
+                return JSON.parse(text);
+            } catch (e) {
+                return { raw: text };
             }
-        ).then(function (res) {
-            if (res.status === 401) {
-                clearToken();
-                throw new Error('GitHub token is invalid or expired (401). Please try again.');
-            }
-            if (res.status === 403) {
-                throw new Error(
-                    'Token lacks permission to dispatch workflows. ' +
-                    'Ensure the authorized OAuth App has the "repo" scope.'
-                );
-            }
-            if (!res.ok) {
-                return res.text().then(function (body) {
-                    throw new Error('Dispatch failed (' + res.status + '): ' + body);
-                });
-            }
-            // 204 No Content on success – the pipeline handles the rest.
         });
     }
 })();
-

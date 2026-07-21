@@ -15,6 +15,7 @@
  *     --pr-number <number>    \
  *     --branch <head-branch>  \
  *     --eoa-url <pages-url>   \
+ *     [--github-app-proxy-url <url>] \
  *     [--html-path diff/index.html]
  */
 
@@ -56,9 +57,9 @@ const config = {
     prNumber: parseInt(parsed['pr-number'], 10),
     branch: parsed['branch'],
     eoaUrl: parsed['eoa-url'],
-    // Optional: GitHub OAuth App client ID for the Device Flow authentication.
-    // Set via --oauth-client-id or the EOA_OAUTH_CLIENT_ID repository variable.
-    ...(parsed['oauth-client-id'] ? { oauthClientId: parsed['oauth-client-id'] } : {}),
+    ...(parsed['github-app-proxy-url']
+        ? { githubAppProxyUrl: parsed['github-app-proxy-url'] }
+        : {}),
 };
 
 // ---------------------------------------------------------------------------
