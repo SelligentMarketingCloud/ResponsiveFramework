@@ -1,21 +1,46 @@
 /**
- * Cloudflare Worker: GitHub App dispatch proxy for EOA baseline updates
+ * Cloudflare Worker: user-authenticated GitHub App dispatch proxy for EOA baseline updates
  *
  * Expected environment variables/secrets:
- * - GITHUB_APP_ID (plain text)
- * - GITHUB_INSTALLATION_ID (plain text)
- * - GITHUB_APP_PRIVATE_KEY_PEM (secret, PKCS#8 PEM with BEGIN/END lines)
+ * - GITHUB_APP_CLIENT_ID (plain text)
+ * - GITHUB_APP_CLIENT_SECRET (secret)
+ * - AUTH_STATE_SECRET (secret used to sign OAuth state)
  * - ALLOWED_OWNER (plain text)
  * - ALLOWED_REPO (plain text)
- * - ALLOWED_ORIGIN (optional, defaults to '*')
+ * - ALLOWED_ORIGIN (required for credentialed browser requests)
+ *
+ * Optional:
+ * - GITHUB_APP_REDIRECT_URI (defaults to <worker-origin>/auth/callback)
+ * - AUTH_COOKIE_NAME (defaults to eoa_gh_user_token)
  */
+
+const AUTH_COOKIE_NAME_DEFAULT = 'eoa_gh_user_token';
+const AUTH_STATE_TTL_SECONDS = 10 * 60;
+const AUTH_COOKIE_MAX_AGE_SECONDS = 8 * 60 * 60;
 
 export default {
   async fetch(request, env) {
-    const corsHeaders = buildCorsHeaders(env);
+    const url = new URL(request.url);
+    const corsHeaders = buildCorsHeaders(env, request.headers.get('Origin'));
 
     if (request.method === 'OPTIONS') {
       return new Response(null, { status: 204, headers: corsHeaders });
+    }
+
+    if (request.method === 'GET' && url.pathname === '/auth/start') {
+      return handleAuthStart(request, env, corsHeaders);
+    }
+
+    if (request.method === 'GET' && url.pathname === '/auth/callback') {
+      return handleAuthCallback(request, env);
+    }
+
+    if (request.method === 'GET' && url.pathname === '/auth/status') {
+      return handleAuthStatus(request, env, corsHeaders);
+    }
+
+    if (request.method === 'POST' && url.pathname === '/auth/logout') {
+      return handleLogout(env, corsHeaders);
     }
 
     if (request.method !== 'POST') {
@@ -34,20 +59,29 @@ export default {
       return json({ message: validationError }, 400, corsHeaders);
     }
 
-    try {
-      const appJwt = await createAppJwt(env.GITHUB_APP_ID, env.GITHUB_APP_PRIVATE_KEY_PEM);
-      const installationToken = await createInstallationToken(appJwt, env.GITHUB_INSTALLATION_ID);
+    const auth = await readAuthenticatedUser(request, env, body.owner, body.repo);
+    if (!auth.ok) {
+      return json(
+        {
+          message: auth.message,
+          authUrl: auth.authUrl || buildAuthStartUrl(request.url),
+        },
+        auth.status,
+        corsHeaders
+      );
+    }
 
+    try {
       const dispatchRes = await fetch(
         `https://api.github.com/repos/${body.owner}/${body.repo}/dispatches`,
         {
           method: 'POST',
           headers: {
-            'Authorization': 'Bearer ' + installationToken,
-            'Accept': 'application/vnd.github+json',
+            Authorization: `******
+            Accept: 'application/vnd.github+json',
             'Content-Type': 'application/json',
             'X-GitHub-Api-Version': '2022-11-28',
-            'User-Agent': 'eoa-github-app-proxy',
+            'User-Agent': 'eoa-github-user-proxy',
           },
           body: JSON.stringify({
             event_type: body.event_type,
@@ -65,20 +99,242 @@ export default {
         );
       }
 
-      return json({ ok: true }, 200, corsHeaders);
+      return json({ ok: true, actor: auth.login }, 200, corsHeaders);
     } catch (error) {
       return json({ message: error.message || 'Unhandled error' }, 500, corsHeaders);
     }
   },
 };
 
-function buildCorsHeaders(env) {
+async function handleAuthStart(request, env, corsHeaders) {
+  if (!env.GITHUB_APP_CLIENT_ID || !env.AUTH_STATE_SECRET) {
+    return json(
+      { message: 'GITHUB_APP_CLIENT_ID and AUTH_STATE_SECRET are required for user auth' },
+      500,
+      corsHeaders
+    );
+  }
+
+  const origin = request.headers.get('Origin') || env.ALLOWED_ORIGIN || '';
+  const payload = {
+    origin,
+    exp: Math.floor(Date.now() / 1000) + AUTH_STATE_TTL_SECONDS,
+  };
+  const signedState = await signState(payload, env.AUTH_STATE_SECRET);
+
+  const requestUrl = new URL(request.url);
+  const redirectUri = env.GITHUB_APP_REDIRECT_URI || `${requestUrl.origin}/auth/callback`;
+
+  const authorizeUrl = new URL('https://github.com/login/oauth/authorize');
+  authorizeUrl.searchParams.set('client_id', env.GITHUB_APP_CLIENT_ID);
+  authorizeUrl.searchParams.set('redirect_uri', redirectUri);
+  authorizeUrl.searchParams.set('state', signedState);
+
+  return new Response(null, {
+    status: 302,
+    headers: {
+      ...corsHeaders,
+      Location: authorizeUrl.toString(),
+    },
+  });
+}
+
+async function handleAuthCallback(request, env) {
+  const callbackUrl = new URL(request.url);
+  const code = callbackUrl.searchParams.get('code');
+  const state = callbackUrl.searchParams.get('state');
+
+  if (!code || !state) {
+    return authCallbackPage(false, null, 'Missing code or state');
+  }
+
+  let statePayload;
+  try {
+    statePayload = await verifyState(state, env.AUTH_STATE_SECRET);
+  } catch (error) {
+    return authCallbackPage(false, null, error.message || 'Invalid state');
+  }
+
+  if (!env.GITHUB_APP_CLIENT_ID || !env.GITHUB_APP_CLIENT_SECRET) {
+    return authCallbackPage(false, statePayload.origin, 'GitHub App OAuth secrets are not configured');
+  }
+
+  const tokenRes = await fetch('https://github.com/login/oauth/access_token', {
+    method: 'POST',
+    headers: {
+      Accept: 'application/json',
+      'Content-Type': 'application/json',
+      'User-Agent': 'eoa-github-user-proxy',
+    },
+    body: JSON.stringify({
+      client_id: env.GITHUB_APP_CLIENT_ID,
+      client_secret: env.GITHUB_APP_CLIENT_SECRET,
+      code,
+      redirect_uri: env.GITHUB_APP_REDIRECT_URI || `${callbackUrl.origin}/auth/callback`,
+    }),
+  });
+
+  const tokenBody = await tokenRes.json();
+  if (!tokenRes.ok || !tokenBody.access_token) {
+    return authCallbackPage(false, statePayload.origin, tokenBody.error_description || 'OAuth token exchange failed');
+  }
+
+  const user = await getGithubUser(tokenBody.access_token);
+  if (!user.ok) {
+    return authCallbackPage(false, statePayload.origin, user.message || 'Could not load authenticated user');
+  }
+
+  const cookieName = env.AUTH_COOKIE_NAME || AUTH_COOKIE_NAME_DEFAULT;
+  const expiresIn = Number(tokenBody.expires_in);
+  const maxAge = Number.isFinite(expiresIn) && expiresIn > 0
+    ? Math.min(expiresIn, AUTH_COOKIE_MAX_AGE_SECONDS)
+    : AUTH_COOKIE_MAX_AGE_SECONDS;
+
+  return authCallbackPage(true, statePayload.origin, null, {
+    login: user.login,
+    setCookie: `${cookieName}=${encodeURIComponent(tokenBody.access_token)}; HttpOnly; Secure; SameSite=None; Path=/; Max-Age=${maxAge}`,
+  });
+}
+
+async function handleAuthStatus(request, env, corsHeaders) {
+  const token = readTokenFromRequest(request, env);
+  if (!token) {
+    return json({ authenticated: false }, 200, corsHeaders);
+  }
+
+  const user = await getGithubUser(token);
+  if (!user.ok) {
+    return json({ authenticated: false }, 200, corsHeaders);
+  }
+
+  return json({ authenticated: true, login: user.login }, 200, corsHeaders);
+}
+
+function handleLogout(env, corsHeaders) {
+  const cookieName = env.AUTH_COOKIE_NAME || AUTH_COOKIE_NAME_DEFAULT;
+  return new Response(JSON.stringify({ ok: true }), {
+    status: 200,
+    headers: {
+      ...corsHeaders,
+      'Content-Type': 'application/json',
+      'Set-Cookie': `${cookieName}=; HttpOnly; Secure; SameSite=None; Path=/; Max-Age=0`,
+    },
+  });
+}
+
+async function readAuthenticatedUser(request, env, owner, repo) {
+  const token = readTokenFromRequest(request, env);
+  if (!token) {
+    return {
+      ok: false,
+      status: 401,
+      message: 'User authentication required',
+      authUrl: buildAuthStartUrl(request.url),
+    };
+  }
+
+  const user = await getGithubUser(token);
+  if (!user.ok) {
+    return {
+      ok: false,
+      status: 401,
+      message: user.message || 'Could not validate user token',
+      authUrl: buildAuthStartUrl(request.url),
+    };
+  }
+
+  const access = await hasRepositoryAccess(token, owner, repo, user.login);
+  if (!access.ok) {
+    return {
+      ok: false,
+      status: 403,
+      message: access.message || `User ${user.login} does not have repository access`,
+    };
+  }
+
   return {
-    'Access-Control-Allow-Origin': env.ALLOWED_ORIGIN || '*',
-    'Access-Control-Allow-Methods': 'POST, OPTIONS',
-    'Access-Control-Allow-Headers': 'Content-Type',
+    ok: true,
+    token,
+    login: user.login,
+  };
+}
+
+function readTokenFromRequest(request, env) {
+  const authHeader = request.headers.get('Authorization');
+  if (authHeader && authHeader.startsWith('Bearer ')) {
+    return authHeader.slice('Bearer '.length).trim();
+  }
+
+  const cookieName = env.AUTH_COOKIE_NAME || AUTH_COOKIE_NAME_DEFAULT;
+  const cookieHeader = request.headers.get('Cookie') || '';
+  const tokenFromCookie = parseCookie(cookieHeader, cookieName);
+  return tokenFromCookie ? decodeURIComponent(tokenFromCookie) : null;
+}
+
+async function getGithubUser(token) {
+  const response = await fetch('https://api.github.com/user', {
+    headers: {
+      Authorization: `******
+      Accept: 'application/vnd.github+json',
+      'X-GitHub-Api-Version': '2022-11-28',
+      'User-Agent': 'eoa-github-user-proxy',
+    },
+  });
+
+  if (!response.ok) {
+    const body = await response.text();
+    return {
+      ok: false,
+      message: `GitHub user lookup failed (${response.status}): ${body}`,
+    };
+  }
+
+  const data = await response.json();
+  if (!data || !data.login) {
+    return { ok: false, message: 'GitHub user lookup returned no login' };
+  }
+
+  return { ok: true, login: data.login };
+}
+
+async function hasRepositoryAccess(token, owner, repo, login) {
+  const response = await fetch(
+    `https://api.github.com/repos/${owner}/${repo}/collaborators/${encodeURIComponent(login)}`,
+    {
+      headers: {
+        Authorization: `******
+        Accept: 'application/vnd.github+json',
+        'X-GitHub-Api-Version': '2022-11-28',
+        'User-Agent': 'eoa-github-user-proxy',
+      },
+    }
+  );
+
+  if (response.status === 204) {
+    return { ok: true };
+  }
+
+  const body = await response.text();
+  return {
+    ok: false,
+    message: `Repository access check failed (${response.status}): ${body}`,
+  };
+}
+
+function buildCorsHeaders(env, requestOrigin) {
+  const allowedOrigin = env.ALLOWED_ORIGIN || requestOrigin || '*';
+  const headers = {
+    'Access-Control-Allow-Origin': allowedOrigin,
+    'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+    'Access-Control-Allow-Headers': 'Content-Type, Authorization',
     'Access-Control-Max-Age': '86400',
   };
+
+  if (allowedOrigin !== '*') {
+    headers['Access-Control-Allow-Credentials'] = 'true';
+  }
+
+  return headers;
 }
 
 function validateRequest(body, env) {
@@ -103,7 +359,6 @@ function validateRequest(body, env) {
   }
 
   const branchString = String(branch || '');
-  // Git refs may include "/" (e.g. feature/foo), but disallow traversal-like patterns.
   const branchLooksSafe =
     /^[A-Za-z0-9_./-]+$/.test(branchString) &&
     !branchString.startsWith('/') &&
@@ -130,8 +385,7 @@ function validateRequest(body, env) {
     parsedCompareUrl.protocol === 'https:' &&
     parsedCompareUrl.hostname === expectedHost &&
     parsedCompareUrl.pathname.startsWith(expectedPathPrefix);
-  // Keep the raw-string ".." check: URL parsing normalizes path segments, so
-  // traversal-like input could be hidden in pathname after normalization.
+
   if (!hasExpectedLocation || compareUrl.includes('..')) {
     return 'Invalid compareUrl';
   }
@@ -139,94 +393,134 @@ function validateRequest(body, env) {
   return null;
 }
 
-async function createInstallationToken(appJwt, installationId) {
-  const tokenRes = await fetch(
-    `https://api.github.com/app/installations/${installationId}/access_tokens`,
-    {
-      method: 'POST',
-      headers: {
-        'Authorization': 'Bearer ' + appJwt,
-        'Accept': 'application/vnd.github+json',
-        'X-GitHub-Api-Version': '2022-11-28',
-        'User-Agent': 'eoa-github-app-proxy',
-      },
-    }
-  );
-
-  if (!tokenRes.ok) {
-    const body = await tokenRes.text();
-    throw new Error(`Failed to create installation token (${tokenRes.status}): ${body}`);
+async function signState(payload, secret) {
+  if (!secret) {
+    throw new Error('AUTH_STATE_SECRET is required');
   }
 
-  const data = await tokenRes.json();
-  if (!data.token) {
-    throw new Error('GitHub installation token was missing from response');
-  }
-
-  return data.token;
-}
-
-async function createAppJwt(appId, privateKeyPem) {
-  if (!appId || !privateKeyPem) {
-    throw new Error('GITHUB_APP_ID and GITHUB_APP_PRIVATE_KEY_PEM are required');
-  }
-
-  const now = Math.floor(Date.now() / 1000);
-  const header = { alg: 'RS256', typ: 'JWT' };
-  const payload = {
-    // Backdate by 60s to tolerate small clock differences between systems.
-    iat: now - 60,
-    exp: now + 9 * 60,
-    iss: appId,
-  };
-
-  const encodedHeader = base64UrlEncode(JSON.stringify(header));
   const encodedPayload = base64UrlEncode(JSON.stringify(payload));
-  const signingInput = `${encodedHeader}.${encodedPayload}`;
-
-  const key = await importPrivateKey(privateKeyPem);
-  const signature = await crypto.subtle.sign(
-    { name: 'RSASSA-PKCS1-v1_5' },
-    key,
-    new TextEncoder().encode(signingInput)
-  );
-
-  return `${signingInput}.${arrayBufferToBase64Url(signature)}`;
+  const signature = await hmacSign(secret, encodedPayload);
+  return `${encodedPayload}.${signature}`;
 }
 
-async function importPrivateKey(pem) {
-  if (pem.includes('-----BEGIN RSA PRIVATE KEY-----')) {
-    throw new Error(
-      'GITHUB_APP_PRIVATE_KEY_PEM must be PKCS#8. Convert RSA PKCS#1 with: openssl pkcs8 -topk8 -nocrypt -in app.pem -out app-pkcs8.pem'
-    );
+async function verifyState(state, secret) {
+  if (!secret) {
+    throw new Error('AUTH_STATE_SECRET is required');
   }
 
-  const cleanPem = pem
-    .replace('-----BEGIN PRIVATE KEY-----', '')
-    .replace('-----END PRIVATE KEY-----', '')
-    .replace(/\s+/g, '');
+  const parts = String(state || '').split('.');
+  if (parts.length !== 2) {
+    throw new Error('Invalid state format');
+  }
 
-  let binaryDer;
+  const [encodedPayload, providedSignature] = parts;
+  const expectedSignature = await hmacSign(secret, encodedPayload);
+  if (!timingSafeEqual(expectedSignature, providedSignature)) {
+    throw new Error('Invalid state signature');
+  }
+
+  let payload;
   try {
-    binaryDer = Uint8Array.from(atob(cleanPem), c => c.charCodeAt(0));
+    payload = JSON.parse(base64UrlDecode(encodedPayload));
   } catch {
-    throw new Error(
-      'Invalid GITHUB_APP_PRIVATE_KEY_PEM format. Expected PEM content with BEGIN/END markers.'
-    );
+    throw new Error('Invalid state payload');
   }
 
-  return crypto.subtle.importKey(
-    'pkcs8',
-    binaryDer,
-    { name: 'RSASSA-PKCS1-v1_5', hash: 'SHA-256' },
+  if (!payload.exp || payload.exp < Math.floor(Date.now() / 1000)) {
+    throw new Error('State has expired');
+  }
+
+  return payload;
+}
+
+async function hmacSign(secret, value) {
+  const key = await crypto.subtle.importKey(
+    'raw',
+    new TextEncoder().encode(secret),
+    { name: 'HMAC', hash: 'SHA-256' },
     false,
     ['sign']
   );
+
+  const signature = await crypto.subtle.sign('HMAC', key, new TextEncoder().encode(value));
+  return arrayBufferToBase64Url(signature);
+}
+
+function timingSafeEqual(left, right) {
+  if (left.length !== right.length) return false;
+  let result = 0;
+  for (let i = 0; i < left.length; i++) {
+    result |= left.charCodeAt(i) ^ right.charCodeAt(i);
+  }
+  return result === 0;
+}
+
+function parseCookie(cookieHeader, key) {
+  const pairs = cookieHeader.split(';');
+  for (const pair of pairs) {
+    const trimmed = pair.trim();
+    if (!trimmed) continue;
+    const idx = trimmed.indexOf('=');
+    if (idx <= 0) continue;
+    const name = trimmed.slice(0, idx);
+    const value = trimmed.slice(idx + 1);
+    if (name === key) return value;
+  }
+  return null;
+}
+
+function buildAuthStartUrl(requestUrl) {
+  const parsed = new URL(requestUrl);
+  parsed.pathname = '/auth/start';
+  parsed.search = '';
+  parsed.hash = '';
+  return parsed.toString();
+}
+
+function authCallbackPage(ok, origin, errorMessage, data = {}) {
+  const targetOrigin = typeof origin === 'string' && origin ? origin : '*';
+  const payload = {
+    type: 'eoa-github-auth',
+    ok,
+    login: data.login || null,
+    error: errorMessage || null,
+  };
+
+  const script = `<!doctype html><html><body><script>
+    (function () {
+      var payload = ${JSON.stringify(payload)};
+      var targetOrigin = ${JSON.stringify(targetOrigin)};
+      if (window.opener && typeof window.opener.postMessage === 'function') {
+        window.opener.postMessage(payload, targetOrigin);
+      }
+      window.close();
+    })();
+  </script></body></html>`;
+
+  const headers = {
+    'Content-Type': 'text/html; charset=utf-8',
+    'Cache-Control': 'no-store',
+  };
+
+  if (data.setCookie) {
+    headers['Set-Cookie'] = data.setCookie;
+  }
+
+  return new Response(script, {
+    status: ok ? 200 : 400,
+    headers,
+  });
 }
 
 function base64UrlEncode(value) {
   const bytes = new TextEncoder().encode(value);
   return uint8ArrayToBase64Url(bytes);
+}
+
+function base64UrlDecode(value) {
+  const padded = value.replace(/-/g, '+').replace(/_/g, '/');
+  const normalized = padded + '==='.slice((padded.length + 3) % 4);
+  return atob(normalized);
 }
 
 function arrayBufferToBase64Url(buffer) {

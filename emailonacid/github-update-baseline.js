@@ -2,16 +2,9 @@
 // from the browser. Intercepts the built-in "Update" button's API call and
 // forwards the update request to a CORS-enabled proxy endpoint.
 //
-// The proxy is expected to run server-side (e.g. Cloudflare Worker), authenticate
-// as a GitHub App installation, and dispatch the workflow event to GitHub.
-// This avoids exposing PATs/secrets in the browser and avoids GitHub OAuth CORS
-// limitations on github.com/login/* endpoints.
-//
-// Flow for each "Update" click:
-//   1. Resolve the clientId from the report's injected data.
-//   2. POST request details to the configured proxy endpoint.
-//   3. Proxy dispatches `eoa-update-baseline` to GitHub using an installation token.
-//   4. Workflow fetches compare image and pushes the updated baseline.
+// The proxy runs server-side (e.g. Cloudflare Worker), requires each user to
+// authenticate via GitHub App OAuth, and then dispatches the workflow event as
+// that authenticated user.
 (function () {
     'use strict';
 
@@ -48,8 +41,6 @@
         return dispatchUpdateViaProxy(clientId);
     }
 
-    // Walk the injected report data to find the specFilename for the given
-    // suite/test combination (e.g. "Windows / Desktop / Outlook 365").
     function resolveClientId(suiteId, name) {
         var report = window.__injectedData__ && window.__injectedData__.report;
         if (!report) return null;
@@ -59,7 +50,6 @@
             for (var j = 0; j < suite.tests.length; j++) {
                 var test = suite.tests[j];
                 if (test.name === name && test.specFilename) {
-                    // Strip the .png extension to get the client ID used as the filename.
                     var filename = test.specFilename;
                     return /\.png$/i.test(filename)
                         ? filename.slice(0, -4)
@@ -71,7 +61,7 @@
     }
 
     // -------------------------------------------------------------------------
-    // Dispatch the update through a GitHub App proxy endpoint
+    // Dispatch the update through a user-authenticated GitHub App proxy endpoint
     // -------------------------------------------------------------------------
 
     function dispatchUpdateViaProxy(clientId) {
@@ -94,9 +84,53 @@
             },
         };
 
+        return ensureAuthenticated(proxyUrl)
+            .then(function () {
+                return postDispatch(proxyUrl, requestPayload);
+            })
+            .catch(function (error) {
+                return Promise.reject(new Error('Could not send baseline update: ' + error.message));
+            });
+    }
+
+    function ensureAuthenticated(proxyUrl) {
+        return authStatus(proxyUrl).then(function (status) {
+            if (status.authenticated) {
+                return status;
+            }
+            return startAuthFlow(proxyUrl).then(function () {
+                return authStatus(proxyUrl).then(function (afterAuth) {
+                    if (!afterAuth.authenticated) {
+                        throw new Error('Authentication completed but no active session was found');
+                    }
+                    return afterAuth;
+                });
+            });
+        });
+    }
+
+    function authStatus(proxyUrl) {
+        return originalFetch(buildProxyUrl(proxyUrl, '/auth/status'), {
+            method: 'GET',
+            mode: 'cors',
+            credentials: 'include',
+            headers: { 'Accept': 'application/json' },
+        }).then(function (res) {
+            return readBody(res).then(function (body) {
+                if (!res.ok) {
+                    var message = body && body.message ? body.message : 'Failed to load authentication status';
+                    throw new Error(message);
+                }
+                return body || {};
+            });
+        });
+    }
+
+    function postDispatch(proxyUrl, requestPayload) {
         return originalFetch(proxyUrl, {
             method: 'POST',
             mode: 'cors',
+            credentials: 'include',
             headers: {
                 'Content-Type': 'application/json',
                 'Accept': 'application/json',
@@ -104,12 +138,74 @@
             body: JSON.stringify(requestPayload),
         }).then(function (res) {
             return readBody(res).then(function (body) {
+                if (res.status === 401 && body && body.authUrl) {
+                    return startAuthFlow(proxyUrl, body.authUrl)
+                        .then(function () { return postDispatch(proxyUrl, requestPayload); });
+                }
                 if (!res.ok) {
                     var message = body && body.message ? body.message : body && body.raw ? body.raw : 'Unknown error';
                     throw new Error('Proxy dispatch failed (' + res.status + '): ' + message);
                 }
             });
         });
+    }
+
+    function startAuthFlow(proxyUrl, authUrl) {
+        var loginUrl = authUrl || buildProxyUrl(proxyUrl, '/auth/start');
+        var popup = window.open(loginUrl, 'eoa-github-auth', 'width=520,height=740,noopener,noreferrer');
+        if (!popup) {
+            return Promise.reject(new Error('Login popup was blocked by the browser'));
+        }
+
+        return new Promise(function (resolve, reject) {
+            var finished = false;
+            var timeout = setTimeout(function () {
+                cleanup();
+                reject(new Error('Timed out waiting for GitHub authentication'));
+            }, 120000);
+
+            var closedInterval = setInterval(function () {
+                if (!popup || popup.closed) {
+                    if (!finished) {
+                        cleanup();
+                        reject(new Error('Authentication popup was closed before completing sign-in'));
+                    }
+                }
+            }, 500);
+
+            function onMessage(event) {
+                if (!event || !event.data || event.data.type !== 'eoa-github-auth') return;
+                finished = true;
+                cleanup();
+                if (event.data.ok) {
+                    resolve();
+                } else {
+                    reject(new Error(event.data.error || 'Authentication failed'));
+                }
+            }
+
+            function cleanup() {
+                clearTimeout(timeout);
+                clearInterval(closedInterval);
+                window.removeEventListener('message', onMessage);
+                try {
+                    if (popup && !popup.closed) popup.close();
+                } catch (e) {
+                    // Ignore cross-origin popup close errors.
+                }
+            }
+
+            window.addEventListener('message', onMessage);
+        });
+    }
+
+    function buildProxyUrl(baseUrl, suffixPath) {
+        var url = new URL(baseUrl, window.location.href);
+        var normalizedBasePath = url.pathname.replace(/\/+$/, '');
+        url.pathname = normalizedBasePath + suffixPath;
+        url.search = '';
+        url.hash = '';
+        return url.toString();
     }
 
     function readBody(res) {
