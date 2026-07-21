@@ -421,7 +421,7 @@ function validateRequest(body, env) {
     ? normalizedCompareUrl.startsWith(configuredPrefix)
     : (
       parsedCompareUrl.protocol === 'https:' &&
-      parsedCompareUrl.hostname === `${env.ALLOWED_OWNER}.github.io` &&
+      parsedCompareUrl.hostname === `${(env.ALLOWED_OWNER || '').toLowerCase()}.github.io` &&
       parsedCompareUrl.pathname.startsWith(`/${env.ALLOWED_REPO}/`)
     );
 
