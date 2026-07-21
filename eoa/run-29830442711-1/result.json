@@ -1,0 +1,338 @@
+{
+  "total": 24,
+  "totalPassed": 23,
+  "totalFailed": 1,
+  "totalSuites": 24,
+  "suites": [
+    {
+      "name": "Apple Mail 16",
+      "path": "./base/Apple Mail 16",
+      "tests": [
+        {
+          "status": "pass",
+          "name": "macOS  13 / Application",
+          "percentage": 0,
+          "failureThreshold": 0.015,
+          "specPath": "./base/applemail16.png",
+          "specFilename": "applemail16.png",
+          "baselinePath": "./base/applemail16.png",
+          "diffPath": "",
+          "comparisonPath": "./compare/applemail16.png"
+        },
+        {
+          "status": "pass",
+          "name": "macOS 13 (Dark Mode) / Application",
+          "percentage": 0,
+          "failureThreshold": 0.015,
+          "specPath": "./base/applemail16_dm.png",
+          "specFilename": "applemail16_dm.png",
+          "baselinePath": "./base/applemail16_dm.png",
+          "diffPath": "",
+          "comparisonPath": "./compare/applemail16_dm.png"
+        }
+      ]
+    },
+    {
+      "name": "Gmail.com",
+      "path": "./base/Gmail.com",
+      "tests": [
+        {
+          "status": "pass",
+          "name": "Windows 10 / Web / Edge",
+          "percentage": 0,
+          "failureThreshold": 0.015,
+          "specPath": "./base/gmailcom-lm_edgecurrent_win10.png",
+          "specFilename": "gmailcom-lm_edgecurrent_win10.png",
+          "baselinePath": "./base/gmailcom-lm_edgecurrent_win10.png",
+          "diffPath": "",
+          "comparisonPath": "./compare/gmailcom-lm_edgecurrent_win10.png"
+        },
+        {
+          "status": "pass",
+          "name": "Windows 10 / Web / Firefox",
+          "percentage": 0,
+          "failureThreshold": 0.015,
+          "specPath": "./base/gmailcom-lm_ffcurrent_win10.png",
+          "specFilename": "gmailcom-lm_ffcurrent_win10.png",
+          "baselinePath": "./base/gmailcom-lm_ffcurrent_win10.png",
+          "diffPath": "",
+          "comparisonPath": "./compare/gmailcom-lm_ffcurrent_win10.png"
+        },
+        {
+          "status": "pass",
+          "name": "Windows 10 / Web / Chrome",
+          "percentage": 0,
+          "failureThreshold": 0.015,
+          "specPath": "./base/gmailcom-lm_chrcurrent_win10.png",
+          "specFilename": "gmailcom-lm_chrcurrent_win10.png",
+          "baselinePath": "./base/gmailcom-lm_chrcurrent_win10.png",
+          "diffPath": "",
+          "comparisonPath": "./compare/gmailcom-lm_chrcurrent_win10.png"
+        },
+        {
+          "status": "fail",
+          "name": "Windows 10 (Dark Mode) / Web / Chrome",
+          "percentage": 1,
+          "failureThreshold": 0.015,
+          "specPath": "./base/gmailcom-dm_chrcurrent_win10.png",
+          "specFilename": "gmailcom-dm_chrcurrent_win10.png",
+          "baselinePath": "./base/no_image_available.png",
+          "diffPath": "./base/no_image_available.png",
+          "comparisonPath": "./compare/gmailcom-dm_chrcurrent_win10.png"
+        }
+      ]
+    },
+    {
+      "name": "iPhone 16 Pro Max",
+      "path": "./base/iPhone 16 Pro Max",
+      "tests": [
+        {
+          "status": "pass",
+          "name": "iOS 18 (Dark Mode) / Mobile",
+          "percentage": 0,
+          "failureThreshold": 0.015,
+          "specPath": "./base/iphone16promax_18_dm.png",
+          "specFilename": "iphone16promax_18_dm.png",
+          "baselinePath": "./base/iphone16promax_18_dm.png",
+          "diffPath": "",
+          "comparisonPath": "./compare/iphone16promax_18_dm.png"
+        }
+      ]
+    },
+    {
+      "name": "Microsoft365.com",
+      "path": "./base/Microsoft365.com",
+      "tests": [
+        {
+          "status": "pass",
+          "name": "Windows 10 / Web / Edge",
+          "percentage": 0.0092,
+          "failureThreshold": 0.015,
+          "specPath": "./base/m365com-lm_edgecurrent_win10.png",
+          "specFilename": "m365com-lm_edgecurrent_win10.png",
+          "baselinePath": "./base/m365com-lm_edgecurrent_win10.png",
+          "diffPath": "",
+          "comparisonPath": "./compare/m365com-lm_edgecurrent_win10.png"
+        },
+        {
+          "status": "pass",
+          "name": "Windows 10 / Web / Firefox",
+          "percentage": 0,
+          "failureThreshold": 0.015,
+          "specPath": "./base/m365com-lm_ffcurrent_win10.png",
+          "specFilename": "m365com-lm_ffcurrent_win10.png",
+          "baselinePath": "./base/m365com-lm_ffcurrent_win10.png",
+          "diffPath": "",
+          "comparisonPath": "./compare/m365com-lm_ffcurrent_win10.png"
+        },
+        {
+          "status": "pass",
+          "name": "Windows 10 / Web / Chrome",
+          "percentage": 0,
+          "failureThreshold": 0.015,
+          "specPath": "./base/m365com-lm_chrcurrent_win10.png",
+          "specFilename": "m365com-lm_chrcurrent_win10.png",
+          "baselinePath": "./base/m365com-lm_chrcurrent_win10.png",
+          "diffPath": "",
+          "comparisonPath": "./compare/m365com-lm_chrcurrent_win10.png"
+        }
+      ]
+    },
+    {
+      "name": "Outlook 2019",
+      "path": "./base/Outlook 2019",
+      "tests": [
+        {
+          "status": "pass",
+          "name": "Windows 10 / Application",
+          "percentage": 0,
+          "failureThreshold": 0.015,
+          "specPath": "./base/outlook19.png",
+          "specFilename": "outlook19.png",
+          "baselinePath": "./base/outlook19.png",
+          "diffPath": "",
+          "comparisonPath": "./compare/outlook19.png"
+        }
+      ]
+    },
+    {
+      "name": "Outlook 2019 (120 dpi)",
+      "path": "./base/Outlook 2019 (120 dpi)",
+      "tests": [
+        {
+          "status": "pass",
+          "name": "Windows 10 / Application",
+          "percentage": 0,
+          "failureThreshold": 0.015,
+          "specPath": "./base/outlook19_125.png",
+          "specFilename": "outlook19_125.png",
+          "baselinePath": "./base/outlook19_125.png",
+          "diffPath": "",
+          "comparisonPath": "./compare/outlook19_125.png"
+        }
+      ]
+    },
+    {
+      "name": "Outlook 2021",
+      "path": "./base/Outlook 2021",
+      "tests": [
+        {
+          "status": "pass",
+          "name": "Windows 11 / Application",
+          "percentage": 0,
+          "failureThreshold": 0.015,
+          "specPath": "./base/outlook2021_win11_lm_dt.png",
+          "specFilename": "outlook2021_win11_lm_dt.png",
+          "baselinePath": "./base/outlook2021_win11_lm_dt.png",
+          "diffPath": "",
+          "comparisonPath": "./compare/outlook2021_win11_lm_dt.png"
+        },
+        {
+          "status": "pass",
+          "name": "Windows 11 (Dark Mode) / Application",
+          "percentage": 0,
+          "failureThreshold": 0.015,
+          "specPath": "./base/outlook2021_win11_dm_dt.png",
+          "specFilename": "outlook2021_win11_dm_dt.png",
+          "baselinePath": "./base/outlook2021_win11_dm_dt.png",
+          "diffPath": "",
+          "comparisonPath": "./compare/outlook2021_win11_dm_dt.png"
+        }
+      ]
+    },
+    {
+      "name": "Outlook Microsoft 365",
+      "path": "./base/Outlook Microsoft 365",
+      "tests": [
+        {
+          "status": "pass",
+          "name": "macOS 13 / Application",
+          "percentage": 0,
+          "failureThreshold": 0.015,
+          "specPath": "./base/m365_mac13_lm_dt.png",
+          "specFilename": "m365_mac13_lm_dt.png",
+          "baselinePath": "./base/m365_mac13_lm_dt.png",
+          "diffPath": "",
+          "comparisonPath": "./compare/m365_mac13_lm_dt.png"
+        },
+        {
+          "status": "pass",
+          "name": "macOS 13 (Dark Mode) / Application",
+          "percentage": 0,
+          "failureThreshold": 0.015,
+          "specPath": "./base/m365_mac13_dm_dt.png",
+          "specFilename": "m365_mac13_dm_dt.png",
+          "baselinePath": "./base/m365_mac13_dm_dt.png",
+          "diffPath": "",
+          "comparisonPath": "./compare/m365_mac13_dm_dt.png"
+        }
+      ]
+    },
+    {
+      "name": "Outlook Office 365",
+      "path": "./base/Outlook Office 365",
+      "tests": [
+        {
+          "status": "pass",
+          "name": "Windows 10 / Application",
+          "percentage": 0,
+          "failureThreshold": 0.015,
+          "specPath": "./base/o365_w10_lm_dt.png",
+          "specFilename": "o365_w10_lm_dt.png",
+          "baselinePath": "./base/o365_w10_lm_dt.png",
+          "diffPath": "",
+          "comparisonPath": "./compare/o365_w10_lm_dt.png"
+        },
+        {
+          "status": "pass",
+          "name": "Windows 10 (Dark Mode) / Application",
+          "percentage": 0,
+          "failureThreshold": 0.015,
+          "specPath": "./base/o365_w10_dm_dt.png",
+          "specFilename": "o365_w10_dm_dt.png",
+          "baselinePath": "./base/o365_w10_dm_dt.png",
+          "diffPath": "",
+          "comparisonPath": "./compare/o365_w10_dm_dt.png"
+        }
+      ]
+    },
+    {
+      "name": "Outlook.com",
+      "path": "./base/Outlook.com",
+      "tests": [
+        {
+          "status": "pass",
+          "name": "Windows 10 / Web / Edge",
+          "percentage": 0,
+          "failureThreshold": 0.015,
+          "specPath": "./base/outlookcom-lm_edgecurrent_win10.png",
+          "specFilename": "outlookcom-lm_edgecurrent_win10.png",
+          "baselinePath": "./base/outlookcom-lm_edgecurrent_win10.png",
+          "diffPath": "",
+          "comparisonPath": "./compare/outlookcom-lm_edgecurrent_win10.png"
+        },
+        {
+          "status": "pass",
+          "name": "Windows 10 / Web / Firefox",
+          "percentage": 0,
+          "failureThreshold": 0.015,
+          "specPath": "./base/outlookcom-lm_ffcurrent_win10.png",
+          "specFilename": "outlookcom-lm_ffcurrent_win10.png",
+          "baselinePath": "./base/outlookcom-lm_ffcurrent_win10.png",
+          "diffPath": "",
+          "comparisonPath": "./compare/outlookcom-lm_ffcurrent_win10.png"
+        },
+        {
+          "status": "pass",
+          "name": "Windows 10 / Web / Chrome",
+          "percentage": 0,
+          "failureThreshold": 0.015,
+          "specPath": "./base/outlookcom-lm_chrcurrent_win10.png",
+          "specFilename": "outlookcom-lm_chrcurrent_win10.png",
+          "baselinePath": "./base/outlookcom-lm_chrcurrent_win10.png",
+          "diffPath": "",
+          "comparisonPath": "./compare/outlookcom-lm_chrcurrent_win10.png"
+        }
+      ]
+    },
+    {
+      "name": "Yahoo.com",
+      "path": "./base/Yahoo.com",
+      "tests": [
+        {
+          "status": "pass",
+          "name": "Windows 10 / Web / Edge",
+          "percentage": 0.0012,
+          "failureThreshold": 0.015,
+          "specPath": "./base/yahoocom-lm_edgecurrent_win10.png",
+          "specFilename": "yahoocom-lm_edgecurrent_win10.png",
+          "baselinePath": "./base/yahoocom-lm_edgecurrent_win10.png",
+          "diffPath": "",
+          "comparisonPath": "./compare/yahoocom-lm_edgecurrent_win10.png"
+        },
+        {
+          "status": "pass",
+          "name": "Windows 10 / Web / Firefox",
+          "percentage": 0.0015,
+          "failureThreshold": 0.015,
+          "specPath": "./base/yahoocom-lm_ffcurrent_win10.png",
+          "specFilename": "yahoocom-lm_ffcurrent_win10.png",
+          "baselinePath": "./base/yahoocom-lm_ffcurrent_win10.png",
+          "diffPath": "",
+          "comparisonPath": "./compare/yahoocom-lm_ffcurrent_win10.png"
+        },
+        {
+          "status": "pass",
+          "name": "Windows 10 / Web / Chrome",
+          "percentage": 0.0015,
+          "failureThreshold": 0.015,
+          "specPath": "./base/yahoocom-lm_chrcurrent_win10.png",
+          "specFilename": "yahoocom-lm_chrcurrent_win10.png",
+          "baselinePath": "./base/yahoocom-lm_chrcurrent_win10.png",
+          "diffPath": "",
+          "comparisonPath": "./compare/yahoocom-lm_chrcurrent_win10.png"
+        }
+      ]
+    }
+  ]
+}
