@@ -155,7 +155,7 @@
 
     function startAuthFlow(proxyUrl, authUrl) {
         var loginUrl = authUrl || buildProxyUrl(proxyUrl, '/auth/start');
-        var popup = window.open(loginUrl, 'eoa-github-auth', 'width=520,height=740,noopener,noreferrer');
+        var popup = window.open(loginUrl, 'eoa-github-auth', 'width=520,height=740');
         if (!popup) {
             return Promise.reject(new Error('Login popup was blocked by the browser'));
         }
