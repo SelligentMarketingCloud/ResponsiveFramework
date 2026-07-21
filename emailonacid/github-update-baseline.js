@@ -19,7 +19,7 @@
     // In-memory session token obtained from the OAuth popup's postMessage.
     // Used as a fallback to avoid relying on cross-site cookies, which are
     // blocked by modern browsers even when SameSite=None is set.
-    var _sessionToken = null;
+    var sessionToken = null;
 
     // Intercept the report library's PUT /api/reports call that backs "Update".
     window.fetch = function (url, options) {
@@ -119,8 +119,8 @@
 
     function authStatus(proxyUrl) {
         var headers = { 'Accept': 'application/json' };
-        if (_sessionToken) {
-            headers['Authorization'] = 'Bearer ' + _sessionToken;
+        if (sessionToken) {
+            headers['Authorization'] = 'Bearer ' + sessionToken;
         }
         return originalFetch(buildProxyUrl(proxyUrl, '/auth/status'), {
             method: 'GET',
@@ -143,8 +143,8 @@
             'Content-Type': 'application/json',
             'Accept': 'application/json',
         };
-        if (_sessionToken) {
-            headers['Authorization'] = 'Bearer ' + _sessionToken;
+        if (sessionToken) {
+            headers['Authorization'] = 'Bearer ' + sessionToken;
         }
         return originalFetch(proxyUrl, {
             method: 'POST',
@@ -191,11 +191,18 @@
 
             function onMessage(event) {
                 if (!event || !event.data || event.data.type !== 'eoa-github-auth') return;
+                // Only accept messages from the expected proxy origin to prevent
+                // malicious pages from injecting a fake auth token.
+                try {
+                    if (event.origin !== new URL(proxyUrl).origin) return;
+                } catch (e) {
+                    return;
+                }
                 finished = true;
                 cleanup();
                 if (event.data.ok) {
                     if (event.data.token) {
-                        _sessionToken = event.data.token;
+                        sessionToken = event.data.token;
                     }
                     resolve();
                 } else {
