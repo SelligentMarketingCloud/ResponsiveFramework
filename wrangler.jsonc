@@ -2,5 +2,5 @@
   "$schema": "node_modules/wrangler/config-schema.json",
   "name": "responsiveframework",
   "main": "emailonacid/cloudflare-worker/worker.js",
-  "compatibility_date": "2026-07-21",
+  "compatibility_date": "2026-07-21"
 }
