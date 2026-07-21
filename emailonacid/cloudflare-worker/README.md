@@ -35,6 +35,17 @@ The browser sends update details to the worker, the worker verifies request safe
 
 Deploy `worker.js` as a Cloudflare Worker.
 
+### Deploying via Cloudflare GitHub integration
+
+The repo includes a `wrangler.toml` at the repository root that points to this worker file. When connecting the repository in the Cloudflare dashboard ("Set up your application"), use these settings:
+
+| Field | Value |
+|---|---|
+| **Build command** | *(leave blank — no build step required)* |
+| **Deploy command** | `npx wrangler deploy` *(Cloudflare default)* |
+
+Set the Worker environment variables/secrets in the Cloudflare dashboard **before** the first deploy (see the list below).
+
 Set Worker variables/secrets:
 
 - `GITHUB_APP_CLIENT_ID` (plain text)
