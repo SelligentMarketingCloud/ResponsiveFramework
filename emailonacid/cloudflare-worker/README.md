@@ -40,7 +40,7 @@ Deploy `worker.js` as a Cloudflare Worker.
 The repo includes a `wrangler.toml` at the repository root that points to this worker file. When connecting the repository in the Cloudflare dashboard ("Set up your application"), use these settings:
 
 | Field | Value |
-|---|---|
+| --- | --- |
 | **Build command** | *(leave blank — no build step required)* |
 | **Deploy command** | `npx wrangler deploy` *(Cloudflare default)* |
 
