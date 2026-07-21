@@ -37,28 +37,41 @@ Deploy `worker.js` as a Cloudflare Worker.
 
 ### Deploying via Cloudflare GitHub integration
 
-The repo includes a `wrangler.toml` at the repository root that points to this worker file. When connecting the repository in the Cloudflare dashboard ("Set up your application"), use these settings:
+The repo includes a `wrangler.jsonc` at the repository root that points to this worker file. When connecting the repository in the Cloudflare dashboard ("Set up your application"), use these settings:
 
 | Field | Value |
 | --- | --- |
 | **Build command** | *(leave blank — no build step required)* |
 | **Deploy command** | `npx wrangler deploy` *(Cloudflare default)* |
 
-Set the Worker environment variables/secrets in the Cloudflare dashboard **before** the first deploy (see the list below).
+> **Important — vars vs. secrets:** Every `wrangler deploy` pushes the local `wrangler.jsonc` configuration to Cloudflare and **replaces** any plain-text variables previously set only in the dashboard. To avoid variables disappearing after a deploy, plain-text variables must be declared in the `vars` section of `wrangler.jsonc`. Cloudflare **secrets** (set with `wrangler secret put` or via the dashboard "Encrypt" toggle) are stored separately and are **never** overwritten by a deploy.
 
-Set Worker variables/secrets:
+#### Plain-text variables — set in `wrangler.jsonc`
 
-- `GITHUB_APP_CLIENT_ID` (plain text)
-- `GITHUB_APP_CLIENT_SECRET` (secret)
-- `AUTH_STATE_SECRET` (secret, long random string for signing OAuth state)
-- `ALLOWED_OWNER=<owner>`
-- `ALLOWED_REPO=<repo>`
-- `ALLOWED_ORIGIN` (required; exact report origin, e.g. `https://selligentmarketingcloud.github.io`)
+`ALLOWED_OWNER`, `ALLOWED_REPO`, and `ALLOWED_ORIGIN` are already committed in `wrangler.jsonc`.
 
-Optional:
+You **must** also fill in `GITHUB_APP_CLIENT_ID` in `wrangler.jsonc` with the Client ID from your GitHub App before deploying:
+
+```jsonc
+"vars": {
+  "ALLOWED_OWNER": "SelligentMarketingCloud",
+  "ALLOWED_REPO": "ResponsiveFramework",
+  "ALLOWED_ORIGIN": "https://selligentmarketingcloud.github.io",
+  "GITHUB_APP_CLIENT_ID": "<your-github-app-client-id>"
+}
+```
+
+Optional plain-text variables (add to `vars` in `wrangler.jsonc` if needed):
 - `GITHUB_APP_REDIRECT_URI=https://<your-worker-domain>/auth/callback`
 - `AUTH_COOKIE_NAME=eoa_gh_user_token`
 - `ALLOWED_COMPARE_URL_PREFIX=https://<your-pages-host>/<repo-or-path-prefix>/` (use for custom Pages domains)
+
+#### Secrets — set with `wrangler secret put` or the Cloudflare dashboard
+
+These are encrypted and persist across deploys — do **not** put them in `wrangler.jsonc`:
+
+- `GITHUB_APP_CLIENT_SECRET`
+- `AUTH_STATE_SECRET` (long random string for signing OAuth state)
 
 ## 3) Wire repository variable
 
