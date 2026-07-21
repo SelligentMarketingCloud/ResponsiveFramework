@@ -69,7 +69,7 @@ export default {
       return json({ message: validationError }, 400, corsHeaders);
     }
 
-    console.log(`[eoa-proxy] dispatch attempt: owner=${body.owner} repo=${body.repo} clientId=${body.client_payload && body.client_payload.clientId} branch=${body.client_payload && body.client_payload.branch}`);
+    console.log(`[eoa-proxy] dispatch attempt: owner=${body.owner} repo=${body.repo} clientId=${body.client_payload?.clientId} branch=${body.client_payload?.branch}`);
 
     const auth = await readAuthenticatedUser(request, env, body.owner, body.repo);
     if (!auth.ok) {
