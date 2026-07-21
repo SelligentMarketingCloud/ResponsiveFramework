@@ -1,3 +1,0 @@
-name = "responsive-framework-eoa-proxy"
-main = "emailonacid/cloudflare-worker/worker.js"
-compatibility_date = "2025-01-01"
