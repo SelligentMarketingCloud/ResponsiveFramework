@@ -28,6 +28,8 @@ export default {
     const url = new URL(request.url);
     const corsHeaders = buildCorsHeaders(env, request.headers.get('Origin'));
 
+    console.log(`[eoa-proxy] ${request.method} ${url.pathname}`);
+
     if (request.method === 'OPTIONS') {
       return new Response(null, { status: 204, headers: corsHeaders });
     }
@@ -49,6 +51,7 @@ export default {
     }
 
     if (request.method !== 'POST') {
+      console.log(`[eoa-proxy] 405 method not allowed: ${request.method}`);
       return json({ message: 'Method not allowed' }, 405, corsHeaders);
     }
 
@@ -56,16 +59,21 @@ export default {
     try {
       body = await request.json();
     } catch {
+      console.log('[eoa-proxy] 400 invalid JSON payload');
       return json({ message: 'Invalid JSON payload' }, 400, corsHeaders);
     }
 
     const validationError = validateRequest(body, env);
     if (validationError) {
+      console.log(`[eoa-proxy] 400 validation error: ${validationError}`);
       return json({ message: validationError }, 400, corsHeaders);
     }
 
+    console.log(`[eoa-proxy] dispatch attempt: owner=${body.owner} repo=${body.repo} clientId=${body.client_payload?.clientId} branch=${body.client_payload?.branch}`);
+
     const auth = await readAuthenticatedUser(request, env, body.owner, body.repo);
     if (!auth.ok) {
+      console.log(`[eoa-proxy] ${auth.status} auth failed: ${auth.message}`);
       return json(
         {
           message: auth.message,
@@ -75,6 +83,8 @@ export default {
         corsHeaders
       );
     }
+
+    console.log(`[eoa-proxy] authenticated as ${auth.login}, dispatching event`);
 
     try {
       const dispatchRes = await fetch(
@@ -97,6 +107,7 @@ export default {
 
       if (!dispatchRes.ok) {
         const dispatchBody = await dispatchRes.text();
+        console.log(`[eoa-proxy] 502 GitHub dispatch failed (${dispatchRes.status}): ${dispatchBody}`);
         return json(
           { message: `GitHub dispatch failed (${dispatchRes.status})`, github: dispatchBody },
           502,
@@ -104,8 +115,10 @@ export default {
         );
       }
 
+      console.log(`[eoa-proxy] 200 dispatch succeeded for actor=${auth.login}`);
       return json({ ok: true, actor: auth.login }, 200, corsHeaders);
     } catch (error) {
+      console.log(`[eoa-proxy] 500 unhandled error: ${error.message}`);
       return json({ message: error.message || 'Unhandled error' }, 500, corsHeaders);
     }
   },
