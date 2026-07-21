@@ -2,5 +2,21 @@
   "$schema": "node_modules/wrangler/config-schema.json",
   "name": "responsiveframework",
   "main": "emailonacid/cloudflare-worker/worker.js",
-  "compatibility_date": "2026-07-21"
+  "compatibility_date": "2026-07-21",
+  // Plain-text environment variables for the Cloudflare Worker.
+  // These are committed here so that `wrangler deploy` does not override (and wipe)
+  // vars that were previously set only in the Cloudflare dashboard.
+  // Secrets (GITHUB_APP_CLIENT_SECRET, AUTH_STATE_SECRET) must be stored separately
+  // with `wrangler secret put` or via the Cloudflare dashboard — they are never
+  // affected by `wrangler deploy`.
+  // If GITHUB_APP_CLIENT_ID changes, update it here and redeploy.
+  "vars": {
+    "ALLOWED_OWNER": "SelligentMarketingCloud",
+    "ALLOWED_REPO": "ResponsiveFramework",
+    "ALLOWED_ORIGIN": "https://selligentmarketingcloud.github.io",
+    // Client ID of the GitHub App used for user OAuth.
+    // This is a public identifier (not a secret) but must be kept in sync here
+    // so it is not lost when wrangler deploy overwrites the remote configuration.
+    "GITHUB_APP_CLIENT_ID": ""
+  }
 }
