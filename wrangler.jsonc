@@ -17,6 +17,7 @@
     // Client ID of the GitHub App used for user OAuth.
     // This is a public identifier (not a secret) but must be kept in sync here
     // so it is not lost when wrangler deploy overwrites the remote configuration.
-    "GITHUB_APP_CLIENT_ID": ""
+    // IMPORTANT: Replace this placeholder with the actual Client ID before deploying.
+    "GITHUB_APP_CLIENT_ID": "REPLACE_ME"
   }
 }
