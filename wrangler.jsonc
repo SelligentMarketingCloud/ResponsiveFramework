@@ -18,6 +18,6 @@
     // This is a public identifier (not a secret) but must be kept in sync here
     // so it is not lost when wrangler deploy overwrites the remote configuration.
     // IMPORTANT: Replace this placeholder with the actual Client ID before deploying.
-    "GITHUB_APP_CLIENT_ID": "REPLACE_ME"
+    "GITHUB_APP_CLIENT_ID": "Iv23lirKZdD8F2CVWh4r"
   }
 }
