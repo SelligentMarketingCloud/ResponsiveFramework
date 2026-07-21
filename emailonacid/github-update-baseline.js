@@ -201,8 +201,9 @@
                 finished = true;
                 cleanup();
                 if (event.data.ok) {
-                    if (event.data.token) {
-                        sessionToken = event.data.token;
+                    var token = event.data.token;
+                    if (typeof token === 'string' && token.length > 0) {
+                        sessionToken = token;
                     }
                     resolve();
                 } else {
