@@ -24,7 +24,7 @@ The browser sends update details to the worker, the worker verifies request safe
    - Keep all other permissions at **No access** unless you intentionally need more.
 7. Install the app:
    - Open the app page → **Install App**.
-   - Install on **SelligentMarketingCloud/ResponsiveFramework** (or the intended target repo only).
+   - Install on **`<owner>/<repo>`** (or the intended target repo only).
 8. Collect required values from the app page:
    - **Client ID**
    - **Client secret** (generate if needed)
@@ -40,13 +40,14 @@ Set Worker variables/secrets:
 - `GITHUB_APP_CLIENT_ID` (plain text)
 - `GITHUB_APP_CLIENT_SECRET` (secret)
 - `AUTH_STATE_SECRET` (secret, long random string for signing OAuth state)
-- `ALLOWED_OWNER=SelligentMarketingCloud`
-- `ALLOWED_REPO=ResponsiveFramework`
+- `ALLOWED_OWNER=<owner>`
+- `ALLOWED_REPO=<repo>`
 - `ALLOWED_ORIGIN` (required; exact report origin, e.g. `https://selligentmarketingcloud.github.io`)
 
 Optional:
 - `GITHUB_APP_REDIRECT_URI=https://<your-worker-domain>/auth/callback`
 - `AUTH_COOKIE_NAME=eoa_gh_user_token`
+- `ALLOWED_COMPARE_URL_PREFIX=https://<your-pages-host>/<repo-or-path-prefix>/` (use for custom Pages domains)
 
 ## 3) Wire repository variable
 
@@ -71,8 +72,8 @@ In repository **Variables**, set:
 
 ```json
 {
-  "owner": "SelligentMarketingCloud",
-  "repo": "ResponsiveFramework",
+  "owner": "<owner>",
+  "repo": "<repo>",
   "event_type": "eoa-update-baseline",
   "client_payload": {
     "clientId": "m365com-lm_chrcurrent_win10",

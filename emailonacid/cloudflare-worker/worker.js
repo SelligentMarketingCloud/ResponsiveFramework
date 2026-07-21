@@ -12,11 +12,16 @@
  * Optional:
  * - GITHUB_APP_REDIRECT_URI (defaults to <worker-origin>/auth/callback)
  * - AUTH_COOKIE_NAME (defaults to eoa_gh_user_token)
+ * - ALLOWED_COMPARE_URL_PREFIX (for custom GitHub Pages domains)
  */
 
 const AUTH_COOKIE_NAME_DEFAULT = 'eoa_gh_user_token';
+// 10 minutes OAuth state lifetime.
 const AUTH_STATE_TTL_SECONDS = 10 * 60;
+// Cap cookie lifetime to 8 hours even if token lives longer.
 const AUTH_COOKIE_MAX_AGE_SECONDS = 8 * 60 * 60;
+// If GitHub does not return expires_in, keep session short (1 hour).
+const AUTH_COOKIE_FALLBACK_MAX_AGE_SECONDS = 60 * 60;
 
 export default {
   async fetch(request, env) {
@@ -77,7 +82,7 @@ export default {
         {
           method: 'POST',
           headers: {
-            Authorization: `******
+            Authorization: 'token ' + auth.token,
             Accept: 'application/vnd.github+json',
             'Content-Type': 'application/json',
             'X-GitHub-Api-Version': '2022-11-28',
@@ -174,7 +179,13 @@ async function handleAuthCallback(request, env) {
     }),
   });
 
-  const tokenBody = await tokenRes.json();
+  let tokenBody;
+  try {
+    tokenBody = await tokenRes.json();
+  } catch {
+    return authCallbackPage(false, statePayload.origin, 'OAuth token exchange returned an invalid response body');
+  }
+
   if (!tokenRes.ok || !tokenBody.access_token) {
     return authCallbackPage(false, statePayload.origin, tokenBody.error_description || 'OAuth token exchange failed');
   }
@@ -188,7 +199,7 @@ async function handleAuthCallback(request, env) {
   const expiresIn = Number(tokenBody.expires_in);
   const maxAge = Number.isFinite(expiresIn) && expiresIn > 0
     ? Math.min(expiresIn, AUTH_COOKIE_MAX_AGE_SECONDS)
-    : AUTH_COOKIE_MAX_AGE_SECONDS;
+    : AUTH_COOKIE_FALLBACK_MAX_AGE_SECONDS;
 
   return authCallbackPage(true, statePayload.origin, null, {
     login: user.login,
@@ -243,12 +254,12 @@ async function readAuthenticatedUser(request, env, owner, repo) {
     };
   }
 
-  const access = await hasRepositoryAccess(token, owner, repo, user.login);
+  const access = await hasRepositoryWriteAccess(token, owner, repo);
   if (!access.ok) {
     return {
       ok: false,
       status: 403,
-      message: access.message || `User ${user.login} does not have repository access`,
+      message: access.message || `User ${user.login} does not have repository write access`,
     };
   }
 
@@ -274,7 +285,7 @@ function readTokenFromRequest(request, env) {
 async function getGithubUser(token) {
   const response = await fetch('https://api.github.com/user', {
     headers: {
-      Authorization: `******
+      Authorization: 'token ' + token,
       Accept: 'application/vnd.github+json',
       'X-GitHub-Api-Version': '2022-11-28',
       'User-Agent': 'eoa-github-user-proxy',
@@ -297,28 +308,35 @@ async function getGithubUser(token) {
   return { ok: true, login: data.login };
 }
 
-async function hasRepositoryAccess(token, owner, repo, login) {
-  const response = await fetch(
-    `https://api.github.com/repos/${owner}/${repo}/collaborators/${encodeURIComponent(login)}`,
-    {
-      headers: {
-        Authorization: `******
-        Accept: 'application/vnd.github+json',
-        'X-GitHub-Api-Version': '2022-11-28',
-        'User-Agent': 'eoa-github-user-proxy',
-      },
-    }
-  );
+async function hasRepositoryWriteAccess(token, owner, repo) {
+  const response = await fetch(`https://api.github.com/repos/${owner}/${repo}`, {
+    headers: {
+      Authorization: 'token ' + token,
+      Accept: 'application/vnd.github+json',
+      'X-GitHub-Api-Version': '2022-11-28',
+      'User-Agent': 'eoa-github-user-proxy',
+    },
+  });
 
-  if (response.status === 204) {
-    return { ok: true };
+  if (!response.ok) {
+    const body = await response.text();
+    return {
+      ok: false,
+      message: `Repository access check failed (${response.status}): ${body}`,
+    };
   }
 
-  const body = await response.text();
-  return {
-    ok: false,
-    message: `Repository access check failed (${response.status}): ${body}`,
-  };
+  const data = await response.json();
+  const permissions = data && data.permissions ? data.permissions : {};
+  const canWrite = Boolean(permissions.push || permissions.maintain || permissions.admin);
+  if (!canWrite) {
+    return {
+      ok: false,
+      message: 'Authenticated user does not have push permissions in the repository',
+    };
+  }
+
+  return { ok: true };
 }
 
 function buildCorsHeaders(env, requestOrigin) {
@@ -340,8 +358,12 @@ function buildCorsHeaders(env, requestOrigin) {
 function validateRequest(body, env) {
   if (!body || typeof body !== 'object') return 'Payload must be an object';
 
-  if (body.owner !== env.ALLOWED_OWNER || body.repo !== env.ALLOWED_REPO) {
-    return 'Repository is not allowed';
+  if (body.owner !== env.ALLOWED_OWNER) {
+    return `Owner "${body.owner}" is not allowed`;
+  }
+
+  if (body.repo !== env.ALLOWED_REPO) {
+    return `Repository "${body.repo}" is not allowed`;
   }
 
   if (body.event_type !== 'eoa-update-baseline') {
@@ -379,12 +401,15 @@ function validateRequest(body, env) {
     return 'Invalid compareUrl';
   }
 
-  const expectedHost = `${env.ALLOWED_OWNER}.github.io`;
-  const expectedPathPrefix = `/${env.ALLOWED_REPO}/`;
-  const hasExpectedLocation =
-    parsedCompareUrl.protocol === 'https:' &&
-    parsedCompareUrl.hostname === expectedHost &&
-    parsedCompareUrl.pathname.startsWith(expectedPathPrefix);
+  const configuredPrefix = String(env.ALLOWED_COMPARE_URL_PREFIX || '').trim();
+  const normalizedCompareUrl = `${parsedCompareUrl.origin}${parsedCompareUrl.pathname}`;
+  const hasExpectedLocation = configuredPrefix
+    ? normalizedCompareUrl.startsWith(configuredPrefix)
+    : (
+      parsedCompareUrl.protocol === 'https:' &&
+      parsedCompareUrl.hostname === `${env.ALLOWED_OWNER}.github.io` &&
+      parsedCompareUrl.pathname.startsWith(`/${env.ALLOWED_REPO}/`)
+    );
 
   if (!hasExpectedLocation || compareUrl.includes('..')) {
     return 'Invalid compareUrl';
@@ -486,7 +511,8 @@ function authCallbackPage(ok, origin, errorMessage, data = {}) {
     error: errorMessage || null,
   };
 
-  const script = `<!doctype html><html><body><script>
+  const nonce = generateNonce();
+  const script = `<!doctype html><html><body><script nonce="${nonce}">
     (function () {
       var payload = ${JSON.stringify(payload)};
       var targetOrigin = ${JSON.stringify(targetOrigin)};
@@ -500,6 +526,7 @@ function authCallbackPage(ok, origin, errorMessage, data = {}) {
   const headers = {
     'Content-Type': 'text/html; charset=utf-8',
     'Cache-Control': 'no-store',
+    'Content-Security-Policy': `default-src 'none'; script-src 'nonce-${nonce}'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'`,
   };
 
   if (data.setCookie) {
@@ -512,6 +539,16 @@ function authCallbackPage(ok, origin, errorMessage, data = {}) {
   });
 }
 
+function generateNonce() {
+  const bytes = new Uint8Array(16);
+  crypto.getRandomValues(bytes);
+  let binary = '';
+  for (let i = 0; i < bytes.length; i++) {
+    binary += String.fromCharCode(bytes[i]);
+  }
+  return btoa(binary).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+}
+
 function base64UrlEncode(value) {
   const bytes = new TextEncoder().encode(value);
   return uint8ArrayToBase64Url(bytes);
@@ -519,6 +556,7 @@ function base64UrlEncode(value) {
 
 function base64UrlDecode(value) {
   const padded = value.replace(/-/g, '+').replace(/_/g, '/');
+  // Pad to a length divisible by 4 before atob decoding.
   const normalized = padded + '==='.slice((padded.length + 3) % 4);
   return atob(normalized);
 }

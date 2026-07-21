@@ -8,6 +8,9 @@
 (function () {
     'use strict';
 
+    // Wait up to 120000 milliseconds for the OAuth popup to complete.
+    var AUTH_POPUP_TIMEOUT_MS = 120000;
+
     var config = window.__eoa_config__;
     if (!config || !config.prNumber) return;
 
@@ -162,12 +165,12 @@
             var timeout = setTimeout(function () {
                 cleanup();
                 reject(new Error('Timed out waiting for GitHub authentication'));
-            }, 120000);
+            }, AUTH_POPUP_TIMEOUT_MS);
 
             var closedInterval = setInterval(function () {
                 if (!popup || popup.closed) {
+                    cleanup();
                     if (!finished) {
-                        cleanup();
                         reject(new Error('Authentication popup was closed before completing sign-in'));
                     }
                 }
