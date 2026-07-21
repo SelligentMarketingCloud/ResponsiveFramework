@@ -108,8 +108,18 @@ export default {
       if (!dispatchRes.ok) {
         const dispatchBody = await dispatchRes.text();
         console.log(`[eoa-proxy] 502 GitHub dispatch failed (${dispatchRes.status}): ${dispatchBody}`);
+        let userMessage = `GitHub dispatch failed (${dispatchRes.status})`;
+        if (dispatchRes.status === 403 && dispatchBody.includes('Resource not accessible by integration')) {
+          // GitHub returns "Resource not accessible by integration" when the GitHub App
+          // installation lacks the permission required by the endpoint (contents:write for
+          // repository_dispatch). Provide an actionable message instead of the raw API error.
+          userMessage =
+            'GitHub dispatch failed (403 Resource not accessible by integration): ' +
+            'the GitHub App installation is missing the "Contents: Read & write" permission. ' +
+            'Grant this permission in the GitHub App settings and re-install the app on the repository.';
+        }
         return json(
-          { message: `GitHub dispatch failed (${dispatchRes.status})`, github: dispatchBody },
+          { message: userMessage, github: dispatchBody },
           502,
           corsHeaders
         );
@@ -146,6 +156,7 @@ async function handleAuthStart(request, env, corsHeaders) {
   const authorizeUrl = new URL('https://github.com/login/oauth/authorize');
   authorizeUrl.searchParams.set('client_id', env.GITHUB_APP_CLIENT_ID);
   authorizeUrl.searchParams.set('redirect_uri', redirectUri);
+  authorizeUrl.searchParams.set('scope', 'repo');
   authorizeUrl.searchParams.set('state', signedState);
 
   return new Response(null, {
